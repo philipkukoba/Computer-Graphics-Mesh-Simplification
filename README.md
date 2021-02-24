@@ -1,1 +1,3 @@
-# Computer-Graphics---Mesh-Simplification
+# Mesh Simplification
+## Project for Computer Graphics 
+## Group 4
