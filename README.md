@@ -3,8 +3,8 @@ Project for Computer Graphics - Group 4
 
 
 # TODO 
-[x] Up and running
-[ ] Task 1 complete
+- [x] Up and running
+- [ ] Task 1 complete
 ...
 
 # Deadlines
