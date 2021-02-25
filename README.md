@@ -3,7 +3,9 @@ Project for Computer Graphics - Group 4
 
 
 # TODO 
-- Write an actual todo 
+[x] Up and running
+[ ] Task 1 complete
+...
 
 # Deadlines
 - By 3rd of April: Mandatory code check-up (be up and running, task 1 complete)
