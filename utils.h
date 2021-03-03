@@ -29,44 +29,44 @@
 // a list of primes...  roughly 2 times as big as previous
 //  chosen randomishly from a web listing
 static  unsigned int  primes[] = {
-        11, 
-        37, 
-        79, 
-       127, 
-       239, 
-       421, 
-      1021, 
-      2383, 
-      5749, 
-      7127, 
-     10079, 
-     13627, 
-     16007, 
-     21163, 
-     46307, 
-     78191, 
-    100459,
-    213977, 
-    453137, 
-   1299827, 
-   2599829, 
-   5399833, 
-  11099833, 
+		11,
+		37,
+		79,
+	   127,
+	   239,
+	   421,
+	  1021,
+	  2383,
+	  5749,
+	  7127,
+	 10079,
+	 13627,
+	 16007,
+	 21163,
+	 46307,
+	 78191,
+	100459,
+	213977,
+	453137,
+   1299827,
+   2599829,
+   5399833,
+  11099833,
   24099857,
   52099877,
- 100000000};
+ 100000000 };
 
 #define MAX_PRIME 100000000
 
 inline int NextLargestPrime(unsigned int x) {
-  if (x > MAX_PRIME) {
-    printf("ERROR! requested size (%d) for hash table is too large (max %d)\n",
-	   x, MAX_PRIME);
-    return x;
-  }
-  int i = 0;
-  while (x > primes[i]) i++;
-  return primes[i];
+	if (x > MAX_PRIME) {
+		printf("ERROR! requested size (%d) for hash table is too large (max %d)\n",
+			x, MAX_PRIME);
+		return x;
+	}
+	int i = 0;
+	while (x > primes[i]) i++;
+	return primes[i];
 }
 
 #endif
