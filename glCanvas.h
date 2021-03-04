@@ -3,8 +3,6 @@
 //
 // The GLCanvas can be created with a call to the 'initialize' routine,
 
-// ====================================================================
-
 #ifndef _GL_CANVAS_H_
 #define _GL_CANVAS_H_
 
@@ -14,12 +12,8 @@
 #include "camera.h"
 #include "mesh.h"
 
-// ====================================================================
-
 class GLCanvas {
-
 private:
-
 	// State of the mouse cursor
 	static int mouseButton;
 	static int mouseX;
@@ -51,11 +45,8 @@ public:
 
 	void initialize(ArgParser* _args, Mesh* _mesh);
 	static void Render();
-
 };
 
 int HandleGLError();
-
-// ====================================================================
 
 #endif

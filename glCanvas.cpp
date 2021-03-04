@@ -6,7 +6,6 @@
 #include <GL/gl.h>
 #include <GL/glut.h>
 
-// ========================================================
 // static variables of GLCanvas class
 
 // State of the mouse cursor
@@ -18,8 +17,6 @@ int GLCanvas::display_list_index;
 ArgParser* GLCanvas::args;
 Camera* GLCanvas::camera;
 Mesh* GLCanvas::mesh;
-
-// ========================================================
 
 void GLCanvas::InitLight() {
 	// Set the last component of the position to 0 to indicate
@@ -220,7 +217,6 @@ void GLCanvas::initialize(ArgParser* _args, Mesh* _mesh) {
 	glutMainLoop();
 }
 
-
 void GLCanvas::Render() {
 	glNewList(display_list_index, GL_COMPILE_AND_EXECUTE);
 	// =========================================================
@@ -230,9 +226,6 @@ void GLCanvas::Render() {
 	glEndList();
 	glutPostRedisplay();
 }
-
-// ========================================================
-// ========================================================
 
 int HandleGLError() {
 	GLenum error;

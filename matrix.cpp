@@ -1,6 +1,4 @@
-//
 // originally implemented by Justin Legakis
-//
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,7 +7,6 @@
 
 #include "matrix.h"
 #include "vectors.h"
-
 
 float det4x4(float a1, float a2, float a3, float a4,
 	float b1, float b2, float b3, float b4,
@@ -21,8 +18,6 @@ float det3x3(float a1, float a2, float a3,
 float det2x2(float a, float b,
 	float c, float d);
 
-// ===================================================================
-// ===================================================================
 // COPY CONSTRUCTOR
 
 Matrix::Matrix(const Matrix& m) {
@@ -299,9 +294,6 @@ Matrix Matrix::MakeAxisRotation(const Vec3f& v, float theta) {
 	return r;
 }
 
-// ====================================================================
-// ====================================================================
-
 void Matrix::Transform(Vec4f& v) const {
 	Vec4f answer;
 	for (int y = 0; y < 4; y++) {
@@ -312,9 +304,6 @@ void Matrix::Transform(Vec4f& v) const {
 	}
 	v = answer;
 }
-
-// ====================================================================
-// ====================================================================
 
 void Matrix::Write(FILE* F) const {
 	assert(F != NULL);
@@ -337,6 +326,3 @@ void Matrix::Read(FILE* F) {
 		}
 	}
 }
-
-// ====================================================================
-// ====================================================================

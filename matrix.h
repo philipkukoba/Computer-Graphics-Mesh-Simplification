@@ -1,23 +1,15 @@
 #ifndef _MATRIX_H_
 #define _MATRIX_H_
 
-//
 // originally implemented by Justin Legakis
-//
 
 #include <math.h>
-#include <assert.h>
 
+#include <assert.h>
 #include "vectors.h"
 
-// ====================================================================
-// ====================================================================
-
 class Matrix {
-
 public:
-
-	// CONSTRUCTORS & DESTRUCTOR
 	Matrix() { Clear(); }
 	Matrix(const Matrix& m);
 	Matrix(const float* m);
@@ -103,13 +95,8 @@ public:
 	void Read(FILE* F);
 
 private:
-
 	// REPRESENTATION
 	float	data[4][4];
-
 };
-
-// ====================================================================
-// ====================================================================
 
 #endif

@@ -6,6 +6,8 @@
 #include "assert.h"
 #include "stdlib.h"
 
+//helper class to parse args
+
 class ArgParser {
 
 public:

@@ -7,8 +7,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-// ====================================================================
-// ====================================================================
 // CONSTRUCTORS
 
 Camera::Camera(Vec3f c, Vec3f d, Vec3f u) {
@@ -31,8 +29,6 @@ PerspectiveCamera::PerspectiveCamera(Vec3f c, Vec3f d, Vec3f u, float a) : Camer
 	yAxis = getScreenUp() * 2 * screenHeight;
 }
 
-// ====================================================================
-// ====================================================================
 // GL INIT
 // Create a camera with the appropriate dimensions that
 // crops the screen in the narrowest dimension.
@@ -48,8 +44,6 @@ void PerspectiveCamera::glInit(int w, int h) {
 	gluPerspective(asp_angle, aspect, 1, 100.0);
 }
 
-// ====================================================================
-// ====================================================================
 // GL PLACE CAMERA
 // Place a camera within an OpenGL scene
 
@@ -121,6 +115,3 @@ void PerspectiveCamera::rotateCamera(float rx, float ry) {
 	xAxis = getHorizontal() * 2 * screenHeight;
 	yAxis = getScreenUp() * 2 * screenHeight;
 }
-
-// ====================================================================
-// ====================================================================

@@ -1,10 +1,7 @@
-
 #ifndef _VECTORS_H_
 #define _VECTORS_H_
 
-//
 // originally implemented by Justin Legakis
-//
 
 #include <iostream>
 using namespace std;
@@ -16,13 +13,8 @@ using namespace std;
 
 class Matrix;
 
-// ====================================================================
-// ====================================================================
-
 class Vec2f {
-
 public:
-
 	// CONSTRUCTORS & DESTRUCTOR
 	Vec2f() { data[0] = data[1] = 0; }
 	Vec2f(const Vec2f& V) {
@@ -145,19 +137,12 @@ public:
 	}
 
 private:
-
 	// REPRESENTATION
 	float		data[2];
-
 };
 
-// ====================================================================
-// ====================================================================
-
 class Vec3f {
-
 public:
-
 	// CONSTRUCTORS & DESTRUCTOR
 	Vec3f() { data[0] = data[1] = data[2] = 0; }
 	Vec3f(const Vec3f& V) {
@@ -374,21 +359,14 @@ public:
 	}
 
 private:
-
 	friend class Matrix;
 
 	// REPRESENTATION
-	float		data[3];
-
+	float data[3];
 };
 
-// ====================================================================
-// ====================================================================
-
 class Vec4f {
-
 public:
-
 	// CONSTRUCTORS & DESTRUCTOR
 	Vec4f() { data[0] = data[1] = data[2] = data[3] = 0; }
 	Vec4f(const Vec4f& V) {
@@ -605,21 +583,16 @@ public:
 	}
 
 private:
-
 	friend class Matrix;
 
 	// REPRESENTATION
 	float		data[4];
-
 };
 
 inline ostream& operator<<(ostream& os, const Vec3f& v) {
 	os << "Vec3f <" << v.x() << ", " << v.y() << ", " << v.z() << ">";
 	return os;
 }
-
-// ====================================================================
-// ====================================================================
 
 #endif
 

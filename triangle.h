@@ -5,12 +5,8 @@
 #include "boundingbox.h"
 #include "edge.h"
 
-// ===========================================================
-
 class Triangle {
-
 public:
-
 	// ========================
 	// CONSTRUCTOR & DESTRUCTOR
 	Triangle() {
@@ -47,18 +43,13 @@ public:
 	// NOTE: If you want to modify a triangle, remove it from the mesh,
 	// delete it, create a new copy with the changes, and re-add it.
 	// This will ensure the edges get updated appropriately.
-
 protected:
-
 	// don't use this constructor
 	Triangle& operator = (const Triangle& t) { assert(0); }
 
 	// ==============
 	// REPRESENTATION
 	Edge* edge;
-
 };
-
-// ===========================================================
 
 #endif

@@ -12,13 +12,10 @@ class Edge;
 class Triangle;
 class VertexParent;
 
-// ======================================================================
-// ======================================================================
+//mesh gebruikt een bag structuur voor zijn vertices edges en triangles etc
 
 class Mesh {
-
 public:
-
 	// ========================
 	// CONSTRUCTOR & DESTRUCTOR
 	Mesh();
@@ -65,7 +62,6 @@ public:
 	void Simplification(int target_tri_count);
 
 private:
-
 	// ==============
 	// REPRESENTATION
 	Array<Vertex*>* vertices;
@@ -73,11 +69,7 @@ private:
 	Bag<Triangle*>* triangles;
 	BoundingBox* bbox;
 	Bag<VertexParent*>* vertex_parents;
-
 };
-
-// ======================================================================
-// ======================================================================
 
 #endif
 

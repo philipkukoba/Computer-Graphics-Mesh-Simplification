@@ -3,19 +3,12 @@
 
 #include <stdio.h>
 #include <assert.h>
-
 #include "vectors.h"
 
-class Vertex;
-
-// ==========================================================
+class Vertex; //todo is this line needed?
 
 class Vertex {
-
 public:
-
-	// ========================
-	// CONSTRUCTOR & DESTRUCTOR
 	Vertex(int i, const Vec3f& pos) : position(pos) { index = i; }
 	virtual ~Vertex() { }
 
@@ -33,7 +26,6 @@ public:
 	void set(double x, double y, double z) { position.Set(x, y, z); }
 
 private:
-
 	// don't use these constructors
 	Vertex() { assert(0); }
 	Vertex& operator=(const Vertex&) { assert(0); }
@@ -51,10 +43,7 @@ private:
 	// versions of this data structure they have a pointer to one of
 	// their incoming edges.  However, this data is very complicated to
 	// maintain during mesh manipulation.
-
 };
-
-// ==========================================================
 
 #endif
 

@@ -18,8 +18,6 @@
 #define INITIAL_EDGE 10000
 #define INITIAL_TRIANGLE 10000
 
-
-
 // =======================================================================
 // CONSTRUCTORS & DESTRUCTORS
 // =======================================================================
@@ -344,7 +342,87 @@ void Mesh::LoopSubdivision() {
 // =================================================================
 
 void Mesh::Simplification(int target_tri_count) {
-	printf("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);
+	//printf("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);
+	//int originalTriangleCount = numTriangles();
+	//first task
+	//while (this->numTriangles() > target_tri_count) {
+
+	//remove X random edges for now
+	int i = 0;
+	while (i < 75) {
+		Edge* AB = edges->ChooseRandom();
+
+		//make sure theres an opposite edge
+		//disregard case where theres no opposite edge for now
+		while (AB->getOpposite() == NULL) {
+			AB = edges->ChooseRandom();
+		}
+
+		//get edge properties
+		Vertex* A = AB->getVertex(); //will be deleted 
+		Edge* BA = AB->getOpposite(); 
+		Edge* BC = AB->getNext();
+		Triangle* ABC = AB->getTriangle();
+
+		//get properties from opposite edge
+		Vertex* B = BA->getVertex();
+		Edge* AE = BA->getNext();
+		Edge* EA = AE->getOpposite(); //todo check for null
+		Triangle* ABE = BA->getTriangle();
+
+		//find CA, AC
+		Edge* CA = BC->getNext();
+		Edge* AC = CA->getOpposite(); //todo check null
+
+		//find DA, D, AD, DE
+		Edge* DA = AC->getNext()->getNext();
+		Vertex* D = DA->getVertex();
+		Edge* AD = DA->getOpposite(); //todo check null
+		Edge* DE = AD->getNext();
+		//and their triangles 
+		Triangle* ACD = DA->getTriangle();
+		Triangle* ADE = AD->getTriangle();
+
+		//make the new halfedges and new 2 triangles
+		//need to make triangles first bc of edge(v,t) constructor
+		Triangle* BCD = new Triangle();
+		Triangle* BDE = new Triangle();
+
+		//triangle property need to be adjusted for existing edges
+		//TODO
+
+		Edge* DB = new Edge(D, BCD);
+		DB->setNext(BC);
+		BCD->setEdge(DB);
+		Edge* BD = new Edge(B, BDE);
+		BD->setNext(DE);
+		BDE->setEdge(BD);
+
+		
+
+		//remove triangles, remove vertex A, remove edges
+		//(todo the order of these should possibly be different)
+		triangles->Remove(ACD);
+		triangles->Remove(ABE);
+		triangles->Remove(ABC);
+		triangles->Remove(ADE);
+		vertices->Remove(A);
+		edges->Remove(AB); edges->Remove(BA);
+		edges->Remove(AC); edges->Remove(CA);
+		edges->Remove(AD); edges->Remove(DA);
+		edges->Remove(AE); edges->Remove(EA);
+
+		//add new edges and triangles
+		edges->Add(BD); edges->Add(DB);
+		triangles->Add(BCD); triangles->Add(BDE);
+		
+		std::cout << "Removed a random edge" << std::endl;
+		i++;
+	}
+
+	/*std::cout << "Mesh has been simplified from " 
+		<< originalTriangleCount << " triangles to " 
+		<< numTriangles() << " triangles." << std::endl;*/
 }
 
 // =================================================================

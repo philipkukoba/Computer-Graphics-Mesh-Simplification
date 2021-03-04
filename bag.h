@@ -5,27 +5,20 @@
 #include "utils.h"
 #include "math.h"
 
-template <class ITERATOR_ELEMENT> class Iterator;
-
-enum BAG_ELEMENT_MARK { BAG_MARK_NULL, BAG_MARK_DELETE, BAG_MARK_PRESENT };
-
 #define MAX_ITERATORS 1
-
 #define LARGE_PRIME_A 10007
 #define LARGE_PRIME_B 11003
 #define LARGE_PRIME_C 12007
 
+template <class ITERATOR_ELEMENT> class Iterator;
+enum BAG_ELEMENT_MARK { BAG_MARK_NULL, BAG_MARK_DELETE, BAG_MARK_PRESENT };
 int NextLargestPrime(unsigned int x);  // defined in utils.C
-
-// ======================================================================
 
 // A bag is implemented with a hash table to allow efficient access and removal
 
 template <class BAG_ELEMENT>
 class Bag {
-
 public:
-
 	// ========================
 	// CONSTRUCTOR & DESTRUCTOR
 	Bag(int s, void (*e_func)(BAG_ELEMENT, int& a, int& b, int& c)) {
@@ -39,6 +32,7 @@ public:
 		count = 0;
 		del_count = 0;
 	}
+
 	virtual ~Bag() {
 		assert(num_iterators == 0);
 		delete[] data;
@@ -48,6 +42,7 @@ public:
 	// =========
 	// ACCESSORS
 	int Count() const { return count; }
+
 	int Member(const BAG_ELEMENT e) const {
 		int a, b, c;
 		assert(e != (BAG_ELEMENT)0);
@@ -66,8 +61,8 @@ public:
 	BAG_ELEMENT ChooseRandom() const {
 		assert(Count() > 0);
 		while (1) {
-			int random_int = int(floor(rand() * size));
-			if (marks[random_int] == BAG_MARK_PRESENT)
+			int random_int = int(floor(rand() % size));
+			if (marks[random_int] == BAG_MARK_PRESENT)   
 				return data[random_int];
 		}
 	}
@@ -243,7 +238,6 @@ public:
 	}
 
 protected:
-
 	int hash(int a, int b, int c) const {
 		int _a = (a < 0) ? 1 - 2 * a : 2 * a;
 		int _b = (b < 0) ? 1 - 2 * b : 2 * b;
@@ -282,16 +276,11 @@ protected:
 	}
 
 	friend class Iterator<BAG_ELEMENT>;
-
 };
-
-// ======================================================================
 
 template <class ITERATOR_ELEMENT>
 class Iterator {
-
 protected:
-
 	// CONSTRUCTOR & DESTRUCTOR
 	Iterator(Bag<ITERATOR_ELEMENT>* b) {
 		bag = b;
@@ -299,8 +288,16 @@ protected:
 	}
 	virtual ~Iterator() {}
 
-public:
+	Iterator() {}
 
+	friend class Bag<ITERATOR_ELEMENT>;
+
+	// ==============
+	// REPRESENTATION
+	int i;
+	Bag<ITERATOR_ELEMENT>* bag;
+
+public:
 	// ACCESSOR
 	ITERATOR_ELEMENT GetNext() {
 		ITERATOR_ELEMENT answer = (ITERATOR_ELEMENT)0;
@@ -315,20 +312,6 @@ public:
 		i++;
 		return answer;
 	}
-
-protected:
-
-	Iterator() {}
-	friend class Bag<ITERATOR_ELEMENT>;
-
-	// ==============
-	// REPRESENTATION
-	int i;
-	Bag<ITERATOR_ELEMENT>* bag;
-
 };
-
-
-
 
 #endif

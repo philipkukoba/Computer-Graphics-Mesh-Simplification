@@ -4,14 +4,12 @@
 #include <stdlib.h>
 #include <assert.h>
 
-// ======================================================================
 // A resizing array.  but remove is slow & changes the element order.
+// todo will need to be rewritten to another data structure sometime
 
 template <class ARRAY_ELEMENT>
 class Array {
-
 public:
-
 	Array(int s) {
 		assert(s > 0);
 		size = s;
@@ -97,13 +95,11 @@ public:
 	}
 
 private:
-
 	// ==============
 	// REPRESENTATION
 	int count;
 	int size;
 	ARRAY_ELEMENT* data;
-
 };
 
 

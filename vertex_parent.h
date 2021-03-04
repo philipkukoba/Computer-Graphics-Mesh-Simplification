@@ -8,20 +8,15 @@
 #include "utils.h"
 #include "vertex.h"
 
-// ===================================================================
 // VertexParent
 
 // useful when you need to track the hierarchy of vertices.  this data
 // structure can be placed in a Bag, and then accessed with the
 // extract function to find the child vertex (if it exists) when given
-// two parents.
-
-// ===================================================================
+// two parents
 
 class VertexParent {
-
 public:
-
 	// ========================
 	// CONSTRUCTORS & DESTRUCTOR
 	VertexParent(Vertex* _p1, Vertex* _p2, Vertex* _v) {
@@ -45,7 +40,6 @@ public:
 	Vertex* get() const { return v; }
 
 protected:
-
 	VertexParent(const VertexParent&) { assert(0); }
 	VertexParent& operator=(const VertexParent&) { assert(0); }
 
@@ -55,7 +49,5 @@ protected:
 	Vertex* p2;
 	Vertex* v;
 };
-
-// ===================================================================
 
 #endif

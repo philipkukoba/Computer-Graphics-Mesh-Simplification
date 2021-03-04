@@ -5,14 +5,8 @@
 #include "vectors.h"
 #include "utils.h"
 
-
-// ====================================================================
-// ====================================================================
-
 class BoundingBox {
-
 public:
-
 	// CONSTRUCTOR & DESTRUCTOR
 	BoundingBox(Vec3f _min, Vec3f _max) {
 		Set(_min, _max);
@@ -47,6 +41,7 @@ public:
 		min = bb->min;
 		max = bb->max;
 	}
+
 	void Set(Vec3f _min, Vec3f _max) {
 		assert(min.x() <= max.x() &&
 			min.y() <= max.y() &&
@@ -54,6 +49,7 @@ public:
 		min = _min;
 		max = _max;
 	}
+
 	void Extend(const Vec3f v) {
 		min = Vec3f(min2(min.x(), v.x()),
 			min2(min.y(), v.y()),
@@ -62,6 +58,7 @@ public:
 			max2(max.y(), v.y()),
 			max2(max.z(), v.z()));
 	}
+
 	void Extend(BoundingBox* bb) {
 		assert(bb != NULL);
 		Extend(bb->min);
@@ -74,6 +71,7 @@ public:
 			min.x(), min.y(), min.z(),
 			max.x(), max.y(), max.z());
 	}
+
 	void paint() const;
 
 private:
@@ -83,8 +81,5 @@ private:
 	Vec3f min;
 	Vec3f max;
 };
-
-// ====================================================================
-// ====================================================================
 
 #endif

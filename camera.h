@@ -4,10 +4,7 @@
 #include <assert.h>
 #include "vectors.h"
 
-// ====================================================================
-
 class Camera {
-
 public:
 	// CONSTRUCTOR & DESTRUCTOR
 	Camera(Vec3f c, Vec3f d, Vec3f u);
@@ -43,10 +40,7 @@ protected:
 	Vec3f up;
 };
 
-// ====================================================================
-
 class PerspectiveCamera : public Camera {
-
 public:
 	// CONSTRUCTOR & DESTRUCTOR
 	PerspectiveCamera(Vec3f c, Vec3f d, Vec3f u, float a);
@@ -78,7 +72,5 @@ private:
 	Vec3f xAxis;
 	Vec3f yAxis;
 };
-
-// ====================================================================
 
 #endif

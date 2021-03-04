@@ -8,15 +8,10 @@
 class Vertex;
 class Triangle;
 
-// ===================================================================
 // half-edge data structure
 
 class Edge {
-
 public:
-
-	// ========================
-	// CONSTRUCTORS & DESTRUCTOR
 	Edge(Vertex* v, Triangle* t);
 	~Edge();
 
@@ -33,6 +28,7 @@ public:
 		// warning!  the opposite edge might be NULL!
 		return opposite;
 	}
+
 	float getCrease() const { return crease; }
 	Vertex* operator[](int i) const {
 		if (i == 0) return getVertex();
@@ -64,11 +60,9 @@ public:
 	void setCrease(float c) { crease = c; }
 
 private:
-
 	Edge(const Edge&) { assert(0); }
 	Edge& operator=(const Edge&) { assert(0); }
 
-	// ==============
 	// REPRESENTATION
 	// in the half edge data adjacency data structure, the edge stores everything!
 	Vertex* vertex;
@@ -77,7 +71,5 @@ private:
 	Edge* next;
 	float crease;
 };
-
-// ===================================================================
 
 #endif
