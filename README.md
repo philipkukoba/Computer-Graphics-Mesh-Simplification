@@ -4,6 +4,7 @@ Project for Computer Graphics - Group 4
 
 # TODO 
 - [x] Up and running
+- [x] Working random edge collapse
 - [ ] Task 1 complete
 
 ...
