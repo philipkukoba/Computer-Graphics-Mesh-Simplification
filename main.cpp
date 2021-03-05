@@ -15,7 +15,8 @@ int main(int argc, char* argv[]) {
 	string input_file;
 
 	//too lazy to input file location everytime (philip)
-	input_file = "C:/Users/p_kuk/Desktop/UNI/Computer Graphics/project/data/bunny_1k.obj";
+	input_file = "C:/Users/p_kuk/Desktop/UNI/Computer Graphics/project/data/bunny_1k.obj"; // Philip
+	input_file = "../../data/torus.obj"; // Laurens
 
 	/*if (args->input_file == NULL)
 	{
@@ -28,7 +29,9 @@ int main(int argc, char* argv[]) {
 
 	mesh->Load(input_file.c_str());
 
-	mesh->Simplification(mesh->numTriangles() * 0.9); //simplify by 10%
+	mesh->CollapseRandomEdge();
+
+	//mesh->Simplification(mesh->numTriangles() * 0.9); //simplify by 10%
 
 	GLCanvas glcanvas;
 	glcanvas.initialize(args, mesh);

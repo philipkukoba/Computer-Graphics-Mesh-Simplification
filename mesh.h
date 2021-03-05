@@ -59,6 +59,8 @@ public:
 	// OTHER FUNCTIONS
 	void Paint(ArgParser* args);
 	void LoopSubdivision();
+	void CollapseEdge(Edge* e);
+	void CollapseRandomEdge();
 	void Simplification(int target_tri_count);
 
 private:

@@ -341,6 +341,129 @@ void Mesh::LoopSubdivision() {
 // SIMPLIFICATION
 // =================================================================
 
+void Mesh::CollapseEdge(Edge* e) {
+	assert(e->getNext() != NULL);
+	assert(e->getOpposite() != NULL);
+	assert(e->getTriangle() != NULL);
+	// The same should hold for all edges we encounter below, so we should really just start from a well-initialized mesh.
+	
+	Edge* AB = e;
+	Edge* BC = AB->getNext();
+	Edge* CA = BC->getNext();
+
+	Vertex* A = CA->getVertex();
+	Vertex* B = AB->getVertex();
+	Vertex* C = BC->getVertex();
+	Triangle* ABC = AB->getTriangle();
+
+	Edge* BA = AB->getOpposite();
+	Edge* AD = BA->getNext();
+	Edge* DB = AD->getNext();
+	Vertex* D = AD->getVertex();
+	Triangle* ADB = AD->getTriangle();
+
+	// Remove A, edges and triangles, but delay deleting them
+	vertices->Remove(A);
+	edges->Remove(AB);
+	edges->Remove(BC); // The new BC will come from AC later.
+	edges->Remove(CA);
+	edges->Remove(AD);
+	edges->Remove(DB); // The new DB will come from DA in the next step.
+	edges->Remove(BA);
+	triangles->Remove(ABC);
+	triangles->Remove(ADB);
+
+
+	// We'll now cycle through all other triangles containing A.
+	bool cycleCompleted = false;
+	Edge* eCycle = AD->getOpposite()->getNext();
+	int cycleStep = 0;
+	Edge* lastBP = NULL;
+	while (eCycle != AB)
+	{
+		Edge* AP = eCycle;
+		Edge* PQ = AP->getNext();
+		Edge* QA = PQ->getNext();
+		Vertex* P = AP->getVertex(); Vertex* Q = PQ->getVertex();
+		Triangle* APQ = AP->getTriangle();
+
+		Triangle* newBPQ = new Triangle();
+		Edge* newBP = new Edge(B, newBPQ); // Will replace AP
+		Edge* newPQ = new Edge(P, newBPQ); // Will replace the old PQ
+		Edge* newQB = new Edge(Q, newBPQ); // Will replace QA
+
+		newBPQ->setEdge(newBP);
+
+		// Set up newBP
+		newBP->setCrease(AP->getCrease());
+		newBP->setNext(newPQ);
+		// The opposite of newBP (PB) comes from the next triangle's newQA (where the next Q is our P), and will hence be set in the next step of the cycle.
+
+		// Set up newPQ
+		newPQ->setCrease(PQ->getCrease());
+		newPQ->setNext(newQB);
+		Edge* QP = PQ->getOpposite(); // Lies in a triangle which does not contain A, so no worries
+		QP->clearOpposite();
+		newPQ->setOpposite(QP); // Also sets QP's opposite to newPQ. So no need to also use QP->setOpposite(newPQ); In fact, this is not allowed as this method asserts that newPQ's opposite is NULL.
+
+		// Set up newQB
+		newQB->setCrease(QA->getCrease());
+		newQB->setNext(newBP);
+		// The opposite of newQB (BQ) comes from the previous triangle's newBP (where the previous P is our Q).
+		if (Q == D)
+		{
+			// Special case if the previous triangle is deleted: when we are now in APD.
+			Edge* BD = DB->getOpposite();
+			BD->clearOpposite();
+			newQB->setOpposite(BD);
+		}
+		else
+		{
+			// No need to use clearOpposite() as lastBP's opposite has not yet been set.
+			newQB->setOpposite(lastBP);
+		}
+
+		// Remove old edges and triangles, add new ones
+		edges->Remove(AP);
+		edges->Remove(PQ); 
+		edges->Remove(QA); 
+		triangles->Remove(APQ);
+
+		edges->Add(newBP);
+		edges->Add(newPQ);
+		edges->Add(newQB);
+		triangles->Add(newBPQ);
+
+		lastBP = newBP; // Remember for the next triangle
+		Edge* nextECycle = eCycle->getOpposite()->getNext();
+
+		delete AP; // Put all of the deletes after all of the Removes, as Remove looks at opposites, which might be set to NULL otherwise.
+		delete PQ;
+		delete QA;
+		delete APQ;
+		// Includes deleting eCycle (AP).
+
+		eCycle = nextECycle;
+
+	}
+
+	// Since we're always delaying setting the opposite of newBP, this still needs to be set for the last triangle. In that case P == C.
+	Edge* CB = BC->getOpposite();
+	CB->clearOpposite();
+	lastBP->setOpposite(CB);
+
+	// Finally, delete the edges from the two fully deleted triangles containing AB or BA. (We were not able to do this earlier as we still needed BC and DB).
+	delete A;
+	delete AB; delete BC; delete CA; delete ABC;
+	delete AD; delete DB; delete BA; delete ADB;
+
+
+}
+
+void Mesh::CollapseRandomEdge() {
+	CollapseEdge(edges->ChooseRandom());
+}
+
 void Mesh::Simplification(int target_tri_count) {
 	//printf("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);
 	//int originalTriangleCount = numTriangles();
