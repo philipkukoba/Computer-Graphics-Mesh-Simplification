@@ -251,7 +251,7 @@ void Mesh::Paint(ArgParser* args) {
 	glScalef(s, s, s);
 	glTranslatef(-center.x(), -center.y(), -center.z());
 
-	// this offset prevents "z-fighting" bewteen the edges and faces
+	// this offset prevents "z-fighting" between the edges and faces
 	// the edges will always win.
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.1, 4.0);
@@ -377,7 +377,6 @@ void Mesh::CollapseEdge(Edge* e) {
 	// We'll now cycle through all other triangles containing A.
 	bool cycleCompleted = false;
 	Edge* eCycle = AD->getOpposite()->getNext();
-	int cycleStep = 0;
 	Edge* lastBP = NULL;
 	while (eCycle != AB)
 	{
@@ -388,16 +387,16 @@ void Mesh::CollapseEdge(Edge* e) {
 		Triangle* APQ = AP->getTriangle();
 
 		Triangle* newBPQ = new Triangle();
-		Edge* newBP = new Edge(B, newBPQ); // Will replace AP
-		Edge* newPQ = new Edge(P, newBPQ); // Will replace the old PQ
-		Edge* newQB = new Edge(Q, newBPQ); // Will replace QA
+		Edge* newBP = new Edge(P, newBPQ); // Will replace AP
+		Edge* newPQ = new Edge(Q, newBPQ); // Will replace the old PQ
+		Edge* newQB = new Edge(B, newBPQ); // Will replace QA
 
 		newBPQ->setEdge(newBP);
 
 		// Set up newBP
 		newBP->setCrease(AP->getCrease());
 		newBP->setNext(newPQ);
-		// The opposite of newBP (PB) comes from the next triangle's newQA (where the next Q is our P), and will hence be set in the next step of the cycle.
+		// The opposite of newBP (PB) comes from the next triangle's newQB (where the next Q is our P), and will hence be set in the next step of the cycle.
 
 		// Set up newPQ
 		newPQ->setCrease(PQ->getCrease());
@@ -412,7 +411,7 @@ void Mesh::CollapseEdge(Edge* e) {
 		// The opposite of newQB (BQ) comes from the previous triangle's newBP (where the previous P is our Q).
 		if (Q == D)
 		{
-			// Special case if the previous triangle is deleted: when we are now in APD.
+			// Special case if the previous triangle is deleted (hence there is no lastBP): when we are now in APD.
 			Edge* BD = DB->getOpposite();
 			BD->clearOpposite();
 			newQB->setOpposite(BD);
@@ -420,7 +419,7 @@ void Mesh::CollapseEdge(Edge* e) {
 		else
 		{
 			// No need to use clearOpposite() as lastBP's opposite has not yet been set.
-			newQB->setOpposite(lastBP);
+			newQB->setOpposite(lastBP); // Also sets the previous step's newBP's opposite.
 		}
 
 		// Remove old edges and triangles, add new ones
@@ -444,7 +443,6 @@ void Mesh::CollapseEdge(Edge* e) {
 		// Includes deleting eCycle (AP).
 
 		eCycle = nextECycle;
-
 	}
 
 	// Since we're always delaying setting the opposite of newBP, this still needs to be set for the last triangle. In that case P == C.
@@ -456,8 +454,6 @@ void Mesh::CollapseEdge(Edge* e) {
 	delete A;
 	delete AB; delete BC; delete CA; delete ABC;
 	delete AD; delete DB; delete BA; delete ADB;
-
-
 }
 
 void Mesh::CollapseRandomEdge() {
@@ -465,87 +461,38 @@ void Mesh::CollapseRandomEdge() {
 }
 
 void Mesh::Simplification(int target_tri_count) {
-	//printf("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);
-	//int originalTriangleCount = numTriangles();
-	//first task
-	//while (this->numTriangles() > target_tri_count) {
-
-	//remove X random edges for now
-	int i = 0;
-	while (i < 75) {
-		Edge* AB = edges->ChooseRandom();
-
-		//make sure theres an opposite edge
-		//disregard case where theres no opposite edge for now
-		while (AB->getOpposite() == NULL) {
-			AB = edges->ChooseRandom();
+	while (numTriangles() > target_tri_count)
+	{
+		CollapseRandomEdge();
+		Iterator<Edge*>* iter = edges->StartIteration();
+		int missingOpposites = 0;
+		int oppositesNotInEdges = 0;
+		int oppositesDifferentPoints = 0;
+		int oppositesInSameTriangle = 0;
+		while (Edge* e = iter->GetNext()) {
+			if (e->getOpposite() == NULL)
+				missingOpposites++;
+			else
+			{
+				if (edges->Member(e->getOpposite()) == 0)
+					oppositesNotInEdges++;
+				if ((*e->getOpposite())[1] != (*e)[0])
+					oppositesDifferentPoints++;
+				
+				Triangle* t1 = e->getTriangle();
+				Triangle* t2 = e->getOpposite()->getTriangle();
+				Vec3f n1 = ComputeNormal((*t1)[0]->get(), (*t1)[1]->get(), (*t1)[2]->get());
+				Vec3f n2 = ComputeNormal((*t2)[0]->get(), (*t2)[1]->get(), (*t2)[2]->get());
+				if (n1 == n2)
+					oppositesInSameTriangle++;
+				n2.Negate();
+				if (n1 == n2)
+					oppositesInSameTriangle++;
+			}
 		}
-
-		//get edge properties
-		Vertex* A = AB->getVertex(); //will be deleted 
-		Edge* BA = AB->getOpposite(); 
-		Edge* BC = AB->getNext();
-		Triangle* ABC = AB->getTriangle();
-
-		//get properties from opposite edge
-		Vertex* B = BA->getVertex();
-		Edge* AE = BA->getNext();
-		Edge* EA = AE->getOpposite(); //todo check for null
-		Triangle* ABE = BA->getTriangle();
-
-		//find CA, AC
-		Edge* CA = BC->getNext();
-		Edge* AC = CA->getOpposite(); //todo check null
-
-		//find DA, D, AD, DE
-		Edge* DA = AC->getNext()->getNext();
-		Vertex* D = DA->getVertex();
-		Edge* AD = DA->getOpposite(); //todo check null
-		Edge* DE = AD->getNext();
-		//and their triangles 
-		Triangle* ACD = DA->getTriangle();
-		Triangle* ADE = AD->getTriangle();
-
-		//make the new halfedges and new 2 triangles
-		//need to make triangles first bc of edge(v,t) constructor
-		Triangle* BCD = new Triangle();
-		Triangle* BDE = new Triangle();
-
-		//triangle property need to be adjusted for existing edges
-		//TODO
-
-		Edge* DB = new Edge(D, BCD);
-		DB->setNext(BC);
-		BCD->setEdge(DB);
-		Edge* BD = new Edge(B, BDE);
-		BD->setNext(DE);
-		BDE->setEdge(BD);
-
-		
-
-		//remove triangles, remove vertex A, remove edges
-		//(todo the order of these should possibly be different)
-		triangles->Remove(ACD);
-		triangles->Remove(ABE);
-		triangles->Remove(ABC);
-		triangles->Remove(ADE);
-		vertices->Remove(A);
-		edges->Remove(AB); edges->Remove(BA);
-		edges->Remove(AC); edges->Remove(CA);
-		edges->Remove(AD); edges->Remove(DA);
-		edges->Remove(AE); edges->Remove(EA);
-
-		//add new edges and triangles
-		edges->Add(BD); edges->Add(DB);
-		triangles->Add(BCD); triangles->Add(BDE);
-		
-		std::cout << "Removed a random edge" << std::endl;
-		i++;
+		edges->EndIteration(iter);
+		cout << missingOpposites << " ; " << oppositesNotInEdges << " ; " << oppositesDifferentPoints << " ; " << oppositesInSameTriangle << endl;
 	}
-
-	/*std::cout << "Mesh has been simplified from " 
-		<< originalTriangleCount << " triangles to " 
-		<< numTriangles() << " triangles." << std::endl;*/
 }
 
 // =================================================================
