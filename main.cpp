@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 
 	mesh->Load(input_file.c_str());
 
-	mesh->CollapseRandomEdge();
+	//mesh->CollapseRandomEdge();
 
 	//mesh->Simplification(mesh->numTriangles() * 0.9); //simplify by 10%
 

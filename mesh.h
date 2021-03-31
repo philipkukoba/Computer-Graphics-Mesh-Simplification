@@ -59,7 +59,11 @@ public:
 	// OTHER FUNCTIONS
 	void Paint(ArgParser* args);
 	void LoopSubdivision();
-	void CollapseEdge(Edge* e);
+	void CollapseEdge(Edge* e, float, float, float); // General collapse point
+	void CollapseEdge(Edge* e); // Default value for the collapse point
+	void CollapseEdge_MidPoint(Edge* e);
+	void CollapseEdge_EndPoint(Edge* e);
+	void CollapseEdge_EndPoint(Edge* e, bool); // Will be the base method where the others are built on top of
 	void CollapseRandomEdge();
 	void Simplification(int target_tri_count);
 

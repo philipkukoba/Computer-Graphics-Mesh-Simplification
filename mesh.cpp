@@ -341,12 +341,14 @@ void Mesh::LoopSubdivision() {
 // SIMPLIFICATION
 // =================================================================
 
-void Mesh::CollapseEdge(Edge* e) {
+void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
+	// Collapses the edge AB to the single point B.
+
 	assert(e->getNext() != NULL);
 	assert(e->getOpposite() != NULL);
 	assert(e->getTriangle() != NULL);
 	// The same should hold for all edges we encounter below, so we should really just start from a well-initialized mesh.
-	
+
 	Edge* AB = e;
 	Edge* BC = AB->getNext();
 	Edge* CA = BC->getNext();
@@ -436,25 +438,71 @@ void Mesh::CollapseEdge(Edge* e) {
 		lastBP = newBP; // Remember for the next triangle
 		Edge* nextECycle = eCycle->getOpposite()->getNext();
 
-		delete AP; // Put all of the deletes after all of the Removes, as Remove looks at opposites, which might be set to NULL otherwise.
-		delete PQ;
-		delete QA;
-		delete APQ;
+		delete AP; AP = NULL; // Put all of the deletes after all of the Removes, as Remove looks at opposites, which might be set to NULL otherwise.
+		delete PQ; PQ = NULL;
+		delete QA; QA = NULL;
+		delete APQ; APQ = NULL;
 		// Includes deleting eCycle (AP).
 
 		eCycle = nextECycle;
 	}
 
+
 	// Since we're always delaying setting the opposite of newBP, this still needs to be set for the last triangle. In that case P == C.
-	Edge* CB = BC->getOpposite();
-	CB->clearOpposite();
-	lastBP->setOpposite(CB);
+	if (lastBP != NULL)
+		// This should always be the case unless we actually didn't loop above. Then AD->getOpposite()->getNext() == AB and AD == AB->'getPrevious()'->getOpposite() == CA->getOpposite() == AC. 
+		// Thus C = D and A lies in only one triangle (excluding flipped orientation).
+	{
+		Edge* CB = BC->getOpposite();
+		CB->clearOpposite();
+		lastBP->setOpposite(CB);
+	}
+	// When A lies in only one triangle we can simply delete our edge BC (==BD), together with their opposite CB==DB, as they all lie in the same triangle (flipped pair). We do not need to replace them.
+	// In all cases these will be deleted below.
 
 	// Finally, delete the edges from the two fully deleted triangles containing AB or BA. (We were not able to do this earlier as we still needed BC and DB).
-	delete A;
-	delete AB; delete BC; delete CA; delete ABC;
-	delete AD; delete DB; delete BA; delete ADB;
+	delete BC; BC = NULL;
+	delete CA; CA = NULL;
+	delete ABC; ABC = NULL;
+	delete AD; AD = NULL;
+	delete DB; DB = NULL;
+	delete BA; BA = NULL; 
+	delete ADB; ADB = NULL;
+	if (deleteE)
+	{
+		delete A; A = NULL;
+		delete AB; AB = NULL;
+	}
 }
+
+void Mesh::CollapseEdge_EndPoint(Edge* e) {
+	// When collapsing an edge AB to B is the final goal, we should delete A and e=AB.
+	CollapseEdge_EndPoint(e, true);
+}
+
+void Mesh::CollapseEdge(Edge* e, float collapse_x, float collapse_y, float collapse_z)
+{
+	Vertex* A = (*e)[1];
+	Vertex* B = (*e)[0];
+	CollapseEdge_EndPoint(e, false);
+	B->set(collapse_x, collapse_y, collapse_z);
+	delete A;
+	delete e;
+}
+
+void Mesh::CollapseEdge_MidPoint(Edge* e)
+{
+	Vertex* A = (*e)[1];
+	Vertex* B = (*e)[0];
+	CollapseEdge(e, (A->x() + B->x()) / 2., (A->y() + B->y()) / 2., (A->z() + B->z()) / 2.);
+}
+
+void Mesh::CollapseEdge(Edge* e)
+{
+	// Default
+	return CollapseEdge_MidPoint(e);
+}
+
 
 void Mesh::CollapseRandomEdge() {
 	CollapseEdge(edges->ChooseRandom());
@@ -465,11 +513,15 @@ void Mesh::Simplification(int target_tri_count) {
 	{
 		CollapseRandomEdge();
 		Iterator<Edge*>* iter = edges->StartIteration();
+		int missingNexts = 0;
 		int missingOpposites = 0;
 		int oppositesNotInEdges = 0;
 		int oppositesDifferentPoints = 0;
 		int oppositesInSameTriangle = 0;
+		int oppositesInFlippedTriangle = 0;
 		while (Edge* e = iter->GetNext()) {
+			if (e->getNext() == NULL)
+				missingNexts++;
 			if (e->getOpposite() == NULL)
 				missingOpposites++;
 			else
@@ -487,11 +539,19 @@ void Mesh::Simplification(int target_tri_count) {
 					oppositesInSameTriangle++;
 				n2.Negate();
 				if (n1 == n2)
-					oppositesInSameTriangle++;
+					oppositesInFlippedTriangle++;
 			}
 		}
 		edges->EndIteration(iter);
-		cout << missingOpposites << " ; " << oppositesNotInEdges << " ; " << oppositesDifferentPoints << " ; " << oppositesInSameTriangle << endl;
+		cout << "Number of vertices: " << vertices->Count() << endl
+			 << "Number of edges: " << edges->Count() << endl
+			 << "Number of triangles: " << triangles->Count() << endl
+			 << "Missing nexts: " << missingNexts << endl
+			 << "Missing opposites: " << missingOpposites << endl
+			 << "Opposites of edges not contained in edges: " << oppositesNotInEdges << endl
+			 << "Opposites having different vertices: " << oppositesDifferentPoints << endl
+			 << "Opposites in same triangle (orientation): " << oppositesInSameTriangle << endl
+			 << "Opposites in flipped triangle (orientation): " << oppositesInFlippedTriangle << endl << endl;
 	}
 }
 
