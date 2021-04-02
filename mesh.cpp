@@ -448,7 +448,7 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 	}
 
 
-	// Since we're always delaying setting the opposite of newBP, this still needs to be set for the last triangle. In that case P == C.
+	// Since we're always delaying setting the opposite of newBP, this still needs to be set for the last triangle. In that case (the last) P == C.
 	if (lastBP != NULL)
 		// This should always be the case unless we actually didn't loop above. Then AD->getOpposite()->getNext() == AB and AD == AB->'getPrevious()'->getOpposite() == CA->getOpposite() == AC. 
 		// Thus C = D and A lies in only one triangle (excluding flipped orientation).
