@@ -60,11 +60,14 @@ public:
 
 	BAG_ELEMENT ChooseRandom() const {
 		assert(Count() > 0);
-		while (1) {
-			int random_int = int(floor(rand() % size));
-			if (marks[random_int] == BAG_MARK_PRESENT)   
-				return data[random_int];
+		int random_base = int(floor(rand() % size));
+		int c = random_base;
+		while (marks[c] != BAG_MARK_PRESENT)
+		{
+			c += random_base;
+			c = c % size;
 		}
+		return data[c];
 	}
 
 	BAG_ELEMENT GetReorder(int a, int b, int c) const {

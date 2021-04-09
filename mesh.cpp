@@ -380,13 +380,21 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 	bool cycleCompleted = false;
 	Edge* eCycle = AD->getOpposite()->getNext();
 	Edge* lastBP = NULL;
-	while (eCycle != AB)
+	while (eCycle->getVertex() != B)
 	{
 		Edge* AP = eCycle;
 		Edge* PQ = AP->getNext();
 		Edge* QA = PQ->getNext();
 		Vertex* P = AP->getVertex(); Vertex* Q = PQ->getVertex();
+		if (A->getIndex() == P->getIndex() || A->getIndex() == Q->getIndex())
+		{
+			bool b = A == B;
+			int debugme2 = 0; // TODO: can happen(!): AA is an edge  (sometimes only (but not always!) indices are the same, but points are different)
+		}
 		Triangle* APQ = AP->getTriangle();
+
+		if (P == B || P == Q || Q == B)
+			int debugme3 = 0; // TODO: P = B can happen!
 
 		Triangle* newBPQ = new Triangle();
 		Edge* newBP = new Edge(P, newBPQ); // Will replace AP
@@ -445,6 +453,16 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 		// Includes deleting eCycle (AP).
 
 		eCycle = nextECycle;
+
+		int missingOpposites = 0;
+		Iterator<Edge*>* iter = edges->StartIteration();
+		while (Edge* e = iter->GetNext()) {
+			if (e->getOpposite() == NULL)
+				missingOpposites++;
+		}
+		edges->EndIteration(iter);
+		std::cout
+			<< "Missing opposites (in method): " << missingOpposites << std::endl;
 	}
 
 
@@ -456,6 +474,14 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 		Edge* CB = BC->getOpposite();
 		CB->clearOpposite();
 		lastBP->setOpposite(CB);
+	}
+	else
+	{
+		Edge* CB = BC->getOpposite();
+		CB->clearOpposite();
+		Edge* BD = DB->getOpposite();
+		BD->clearOpposite();
+		CB->setOpposite(BD);
 	}
 	// When A lies in only one triangle we can simply delete our edge BC (==BD), together with their opposite CB==DB, as they all lie in the same triangle (flipped pair). We do not need to replace them.
 	// In all cases these will be deleted below.
@@ -543,15 +569,15 @@ void Mesh::Simplification(int target_tri_count) {
 			}
 		}
 		edges->EndIteration(iter);
-		cout << "Number of vertices: " << vertices->Count() << endl
-			 << "Number of edges: " << edges->Count() << endl
-			 << "Number of triangles: " << triangles->Count() << endl
-			 << "Missing nexts: " << missingNexts << endl
-			 << "Missing opposites: " << missingOpposites << endl
-			 << "Opposites of edges not contained in edges: " << oppositesNotInEdges << endl
-			 << "Opposites having different vertices: " << oppositesDifferentPoints << endl
-			 << "Opposites in same triangle (orientation): " << oppositesInSameTriangle << endl
-			 << "Opposites in flipped triangle (orientation): " << oppositesInFlippedTriangle << endl << endl;
+		std::cout << "Number of vertices: " << vertices->Count() << std::endl
+			<< "Number of edges: " << edges->Count() << std::endl
+			<< "Number of triangles: " << triangles->Count() << std::endl
+			<< "Missing nexts: " << missingNexts << std::endl
+			<< "Missing opposites: " << missingOpposites << std::endl
+			<< "Opposites of edges not contained in edges: " << oppositesNotInEdges << std::endl
+			<< "Opposites having different vertices: " << oppositesDifferentPoints << std::endl
+			<< "Opposites in same triangle (orientation): " << oppositesInSameTriangle << std::endl
+			<< "Opposites in flipped triangle (orientation): " << oppositesInFlippedTriangle << std::endl << std::endl;
 	}
 }
 
