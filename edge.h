@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <assert.h>
+#include <math.h>
 
 class Vertex;
 class Triangle;
@@ -44,12 +45,14 @@ public:
 		assert(e->opposite == NULL);
 		opposite = e;
 		e->opposite = this;
+		calculateLength();
 	}
 	void clearOpposite() {
 		if (opposite == NULL) return;
 		assert(opposite->opposite == this);
 		opposite->opposite = NULL;
 		opposite = NULL;
+		calculateLength();
 	}
 	void setNext(Edge* e) {
 		assert(next == NULL);
@@ -59,9 +62,15 @@ public:
 	}
 	void setCrease(float c) { crease = c; }
 
+	//fields
+	int getLength() const { return length;  }
+
+	//override operator so we can store edges in sorted data structures
+	bool operator<(const Edge& e) { return length < e.length; }
+
 private:
-	Edge(const Edge&) { assert(0); }
-	Edge& operator=(const Edge&) { assert(0); }
+	Edge(const Edge&) = delete;
+	Edge& operator=(const Edge&) = delete;
 
 	// REPRESENTATION
 	// in the half edge data adjacency data structure, the edge stores everything!
@@ -70,6 +79,11 @@ private:
 	Edge* opposite;
 	Edge* next;
 	float crease;
+
+	int length;
+
+	//bereken lengte van edge (voor shortest edge collapse)
+	void calculateLength();
 };
 
 #endif
