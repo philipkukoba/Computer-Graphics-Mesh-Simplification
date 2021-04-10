@@ -45,14 +45,14 @@ public:
 		assert(e->opposite == NULL);
 		opposite = e;
 		e->opposite = this;
-		calculateLength();
+		calculateLengthAndIndex();
 	}
 	void clearOpposite() {
 		if (opposite == NULL) return;
 		assert(opposite->opposite == this);
 		opposite->opposite = NULL;
 		opposite = NULL;
-		calculateLength();
+		//calculateLengthAndIndex();
 	}
 	void setNext(Edge* e) {
 		assert(next == NULL);
@@ -63,7 +63,7 @@ public:
 	void setCrease(float c) { crease = c; }
 
 	//fields
-	int getLength() const { return length;  }
+	float getLength() const { return length;  }
 
 	//override operator so we can store edges in sorted data structures
 	bool operator<(const Edge& e) { return length < e.length; }
@@ -80,10 +80,12 @@ private:
 	Edge* next;
 	float crease;
 
-	int length;
+	float length;
+	int Index; //ID is based on startvertex and endvertex
 
 	//bereken lengte van edge (voor shortest edge collapse)
-	void calculateLength();
+	//Index is based on startvertex and endvertex
+	void calculateLengthAndIndex();
 };
 
 #endif

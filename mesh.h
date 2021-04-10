@@ -4,11 +4,12 @@
 #include "vectors.h"
 #include "array.h"
 #include "bag.h"
+#include "edge.h"
 #include "boundingbox.h"
 #include "argparser.h"
+#include <queue>
 
 class Vertex;
-class Edge;
 class Triangle;
 class VertexParent;
 
@@ -65,6 +66,7 @@ public:
 	void CollapseEdge_EndPoint(Edge* e);
 	void CollapseEdge_EndPoint(Edge* e, bool); // Will be the base method where the others are built on top of
 	void CollapseRandomEdge();
+	void CollapseShortestEdge();
 	void Simplification(int target_tri_count);
 
 private:
@@ -75,6 +77,18 @@ private:
 	Bag<Triangle*>* triangles;
 	BoundingBox* bbox;
 	Bag<VertexParent*>* vertex_parents;
+
+	class EdgeComparer {
+	public:
+		int operator() (const Edge* const e1, const Edge* const e2) {
+			if (e1->getLength() == NULL || e2->getLength() == NULL) {
+				throw "comparing lengths with an edge with length NULL";
+			}
+			return e1->getLength() > e2->getLength();
+		}
+	};
+
+	priority_queue <Edge*, vector<Edge*>, EdgeComparer>* edgesShortestFirst;
 };
 
 #endif

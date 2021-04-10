@@ -4,7 +4,7 @@
 #include "vertex.h"
 #include "edge.h"
 
-Edge::Edge(Vertex* v, Triangle* t): length(NULL) {
+Edge::Edge(Vertex* v, Triangle* t): length(NULL), Index(NULL) {
 	vertex = v;
 	triangle = t;
 	next = NULL;
@@ -23,11 +23,17 @@ void Edge::extract_func(Edge* e, int& a, int& b, int& c) {
 	c = 0;
 }
 
-void Edge::calculateLength() {
-	if (this->opposite == NULL) throw "Tried calculating length of edge without an opposite";
-	length = sqrt(pow((this->vertex->x() - this->opposite->vertex->x()), 2) +
-		pow((this->vertex->y() - this->opposite->vertex->z()), 2) +
-		pow((this->vertex->y() - this->opposite->vertex->z()), 2));
+void Edge::calculateLengthAndIndex() {
+	if (this->opposite == NULL) {
+		throw "Cant calculate length/index because opposite is NULL";
+	}
+	else {
+		this->length = sqrt(pow((this->vertex->x() - this->opposite->vertex->x()), 2) +
+			pow((this->vertex->y() - this->opposite->vertex->y()), 2) +
+			pow((this->vertex->z() - this->opposite->vertex->z()), 2));
+		this->Index = this->vertex->getIndex() - this->opposite->vertex->getIndex();
+		//std::cout << "calculated length: " << length << " and index: " << Index << std::endl;
+	}
 }
 
 #endif

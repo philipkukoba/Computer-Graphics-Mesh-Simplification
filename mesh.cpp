@@ -27,6 +27,7 @@ Mesh::Mesh() {
 	edges = new Bag<Edge*>(INITIAL_EDGE, Edge::extract_func);
 	triangles = new Bag<Triangle*>(INITIAL_TRIANGLE, Triangle::extract_func);
 	vertex_parents = new Bag<VertexParent*>(INITIAL_VERTEX, VertexParent::extract_func);
+	edgesShortestFirst = new priority_queue<Edge*, std::vector<Edge*>, EdgeComparer>();
 	bbox = NULL;
 }
 
@@ -83,9 +84,18 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	Edge* ea_op = getEdge((*ea)[1], (*ea)[0]);
 	Edge* eb_op = getEdge((*eb)[1], (*eb)[0]);
 	Edge* ec_op = getEdge((*ec)[1], (*ec)[0]);
-	if (ea_op != NULL) { ea_op->setOpposite(ea); }
-	if (eb_op != NULL) { eb_op->setOpposite(eb); }
-	if (ec_op != NULL) { ec_op->setOpposite(ec); }
+	if (ea_op != NULL) { 
+		ea_op->setOpposite(ea);
+		edgesShortestFirst->push(ea_op);
+	}
+	if (eb_op != NULL) { 
+		eb_op->setOpposite(eb); 
+		edgesShortestFirst->push(eb_op);
+	}
+	if (ec_op != NULL) { 
+		ec_op->setOpposite(ec); 
+		edgesShortestFirst->push(ec_op);
+	}
 
 	// add the triangle to the master list
 	triangles->Add(t);
@@ -113,6 +123,7 @@ void Mesh::removeTriangle(Triangle* t) {
 
 Edge* Mesh::getEdge(Vertex* a, Vertex* b) const {
 	assert(edges != NULL);
+	//std::cout << "used edges->get(a,b)" << std::endl;
 	return edges->Get(a->getIndex(), b->getIndex());
 }
 
@@ -441,6 +452,12 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 		edges->Add(newBP);
 		edges->Add(newPQ);
 		edges->Add(newQB);
+
+		/*edgesShortestFirst->push(newBP);
+		edgesShortestFirst->push(newPQ);
+		edgesShortestFirst->push(newQB);*/
+
+
 		triangles->Add(newBPQ);
 
 		lastBP = newBP; // Remember for the next triangle
@@ -454,15 +471,17 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 
 		eCycle = nextECycle;
 
-		int missingOpposites = 0;
+
+		//debugging code
+		/*int missingOpposites = 0;
 		Iterator<Edge*>* iter = edges->StartIteration();
 		while (Edge* e = iter->GetNext()) {
 			if (e->getOpposite() == NULL)
 				missingOpposites++;
 		}
-		edges->EndIteration(iter);
-		std::cout
-			<< "Missing opposites (in method): " << missingOpposites << std::endl;
+		edges->EndIteration(iter);*/
+		/*std::cout
+			<< "Missing opposites (in method): " << missingOpposites << std::endl;*/
 	}
 
 
@@ -534,11 +553,21 @@ void Mesh::CollapseRandomEdge() {
 	CollapseEdge(edges->ChooseRandom());
 }
 
+void Mesh::CollapseShortestEdge() {
+	CollapseEdge_EndPoint(edgesShortestFirst->top());
+	edgesShortestFirst->pop();
+}
+
 void Mesh::Simplification(int target_tri_count) {
+	CollapseShortestEdge(); return;
+	
 	while (numTriangles() > target_tri_count)
 	{
-		CollapseRandomEdge();
-		Iterator<Edge*>* iter = edges->StartIteration();
+		//CollapseRandomEdge();
+		CollapseShortestEdge();
+
+		//debug code
+		/*Iterator<Edge*>* iter = edges->StartIteration();
 		int missingNexts = 0;
 		int missingOpposites = 0;
 		int oppositesNotInEdges = 0;
@@ -568,8 +597,8 @@ void Mesh::Simplification(int target_tri_count) {
 					oppositesInFlippedTriangle++;
 			}
 		}
-		edges->EndIteration(iter);
-		std::cout << "Number of vertices: " << vertices->Count() << std::endl
+		edges->EndIteration(iter);*/
+		/*std::cout << "Number of vertices: " << vertices->Count() << std::endl
 			<< "Number of edges: " << edges->Count() << std::endl
 			<< "Number of triangles: " << triangles->Count() << std::endl
 			<< "Missing nexts: " << missingNexts << std::endl
@@ -577,7 +606,7 @@ void Mesh::Simplification(int target_tri_count) {
 			<< "Opposites of edges not contained in edges: " << oppositesNotInEdges << std::endl
 			<< "Opposites having different vertices: " << oppositesDifferentPoints << std::endl
 			<< "Opposites in same triangle (orientation): " << oppositesInSameTriangle << std::endl
-			<< "Opposites in flipped triangle (orientation): " << oppositesInFlippedTriangle << std::endl << std::endl;
+			<< "Opposites in flipped triangle (orientation): " << oppositesInFlippedTriangle << std::endl << std::endl;*/
 	}
 }
 
