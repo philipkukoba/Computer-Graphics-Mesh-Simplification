@@ -24,6 +24,7 @@ public:
 	// MODIFIERS
 	void set(Vec3f v) { position = v; }
 	void set(double x, double y, double z) { position.Set(x, y, z); }
+	void setIndex(int i) { index = i; }
 
 private:
 	// don't use these constructors

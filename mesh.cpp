@@ -642,11 +642,34 @@ void Mesh::Save() const
 		//write all vertices
 		
 		int count = vertices->Count();
+
+		////vertices need to be sorted first based on their (original) index
+		//Array<Vertex*>* verticesSorted = vertices;
+		////insertion sort	
+		//int i, index, j;
+		//for (i = 1; i < count; i++) {
+		//	index = verticesSorted->operator[](i)->getIndex();
+		//	j = i - 1;
+		//	/* Move elements of arr[0..i-1], that are
+		//	  greater than key, to one position ahead
+		//	  of their current position */
+		//	while (j >= 0 && arr[j] > index) {
+		//		arr[j + 1] = arr[j];
+		//		j = j - 1;
+		//	}
+		//	arr[j + 1] = index;
+		//}
+
 		for (int i = 0; i < count; i++) {
+
+			//set new index (starts at 1)
+			vertices->operator[](i)->setIndex(i + 1);
+
 			myfile << "v "
 				+ std::to_string(vertices->operator[](i)->x()) + ' '
 				+ std::to_string(vertices->operator[](i)->y()) + ' '
 				+ std::to_string(vertices->operator[](i)->z()) + '\n';
+			//std::cout << "index: " << verticesSorted->operator[](i)->getIndex() << std::endl;
 		}
 
 		//write all faces (triangles)

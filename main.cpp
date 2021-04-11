@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
 	string input_file;
 
 	//too lazy to input file location everytime
-	input_file = "../../data/bunny_200_simplified_to_180.obj";
+	input_file = "../../data/cube_simplified_to_10_simplified_to_6.obj";
 
 	/*if (args->input_file == NULL)
 	{
