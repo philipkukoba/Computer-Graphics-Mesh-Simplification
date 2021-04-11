@@ -142,6 +142,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+	<ClInclude Include="..\glsl.h" />
     <ClInclude Include="..\argparser.h" />
     <ClInclude Include="..\array.h" />
     <ClInclude Include="..\bag.h" />
@@ -158,6 +159,7 @@
     <ClInclude Include="..\vertex_parent.h" />
   </ItemGroup>
   <ItemGroup>
+	<ClInclude Include="..\glsl.cpp" />
     <ClCompile Include="..\boundingbox.cpp" />
     <ClCompile Include="..\camera.cpp" />
     <ClCompile Include="..\edge.cpp" />

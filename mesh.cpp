@@ -563,7 +563,7 @@ void Mesh::CollapseShortestEdge() {
 	Edge* e = edgesShortestFirst->top();
 
 	//controleer of de edge niet al verwijderd is in de bag
-	while (edges->Get(e->getIndexA(), e->getIndexB()) == 0)
+	while (e->getIndexA() == e->getIndexB() || edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
 	{
 		edgesShortestFirst->pop();
 		e = edgesShortestFirst->top();
@@ -578,8 +578,8 @@ void Mesh::Simplification(int target_tri_count) {
 
 	while (numTriangles() > target_tri_count)
 	{
-		CollapseRandomEdge();
-		//CollapseShortestEdge();
+		//CollapseRandomEdge();
+		CollapseShortestEdge();
 
 		//debug code
 		/*Iterator<Edge*>* iter = edges->StartIteration();
@@ -642,24 +642,6 @@ void Mesh::Save() const
 		//write all vertices
 		
 		int count = vertices->Count();
-
-		////vertices need to be sorted first based on their (original) index
-		//Array<Vertex*>* verticesSorted = vertices;
-		////insertion sort	
-		//int i, index, j;
-		//for (i = 1; i < count; i++) {
-		//	index = verticesSorted->operator[](i)->getIndex();
-		//	j = i - 1;
-		//	/* Move elements of arr[0..i-1], that are
-		//	  greater than key, to one position ahead
-		//	  of their current position */
-		//	while (j >= 0 && arr[j] > index) {
-		//		arr[j + 1] = arr[j];
-		//		j = j - 1;
-		//	}
-		//	arr[j + 1] = index;
-		//}
-
 		for (int i = 0; i < count; i++) {
 
 			//set new index (starts at 1)
@@ -674,9 +656,6 @@ void Mesh::Save() const
 
 		//write all faces (triangles)
 
-		// TODO
-		// let op de indices kloppen wrs niet
-
 		Iterator<Triangle*>* iterT = triangles->StartIteration();
 		while (Triangle* t = iterT->GetNext()) {
 			myfile << "f "
@@ -685,7 +664,6 @@ void Mesh::Save() const
 				+ std::to_string(t->operator[](2)->getIndex()) + '\n';
 		}
 		triangles->EndIteration(iterT);
-
 
 		myfile.close();
 	}
