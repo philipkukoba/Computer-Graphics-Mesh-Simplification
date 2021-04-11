@@ -64,8 +64,10 @@ public:
 
 	//fields
 	float getLength() const { return length;  }
+	int getIndexA() const { return indexA; }
+	int getIndexB() const { return indexB; }
 
-	//override operator so we can store edges in sorted data structures
+	//define operator so we can store edges in sorted data structures
 	bool operator<(const Edge& e) { return length < e.length; }
 
 private:
@@ -81,10 +83,11 @@ private:
 	float crease;
 
 	float length;
-	int Index; //ID is based on startvertex and endvertex
 
+	int indexA;
+	int indexB;
+	
 	//bereken lengte van edge (voor shortest edge collapse)
-	//Index is based on startvertex and endvertex
 	void calculateLengthAndIndex();
 };
 

@@ -145,8 +145,10 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 		Render();
 		break;
 	case 's': case 'S':
-		mesh->LoopSubdivision();
-		Render();
+		//mesh->LoopSubdivision();
+		//Render();
+		mesh->Save();
+		printf("The mesh has been saved");
 		break;
 	case 'd': case 'D':
 		mesh->Simplification((int)floor(0.9 * mesh->numTriangles()));

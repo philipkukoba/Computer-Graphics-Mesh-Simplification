@@ -68,6 +68,7 @@ public:
 	void CollapseRandomEdge();
 	void CollapseShortestEdge();
 	void Simplification(int target_tri_count);
+	void Save() const;
 
 private:
 	// ==============
@@ -77,6 +78,8 @@ private:
 	Bag<Triangle*>* triangles;
 	BoundingBox* bbox;
 	Bag<VertexParent*>* vertex_parents;
+
+	const char* input_file;
 
 	class EdgeComparer {
 	public:
