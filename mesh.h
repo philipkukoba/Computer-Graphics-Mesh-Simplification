@@ -83,10 +83,7 @@ private:
 
 	class EdgeComparer {
 	public:
-		int operator() (const Edge* const e1, const Edge* const e2) {
-			if (e1->getLength() == NULL || e2->getLength() == NULL) {
-				std::cout << "comparing lengths with an edge with length NULL" << std::endl;
-			}
+		int operator() (Edge* const e1, Edge* const e2) {
 			return e1->getLength() > e2->getLength();
 		}
 	};

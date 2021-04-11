@@ -560,10 +560,19 @@ void Mesh::CollapseRandomEdge() {
 }
 
 void Mesh::CollapseShortestEdge() {
+
+	//if the heap is empty it needs to be refreshed
+	//if (edgesShortestFirst->empty()) {
+
+	//}
+
 	Edge* e = edgesShortestFirst->top();
 
 	//controleer of de edge niet al verwijderd is in de bag
-	while (e->getIndexA() == e->getIndexB() || edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
+	//of als de edge geen opposite heeft
+	while (e->getOpposite() == NULL || 
+		e->getIndexA() == e->getIndexB() || 
+		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
 	{
 		edgesShortestFirst->pop();
 		e = edgesShortestFirst->top();

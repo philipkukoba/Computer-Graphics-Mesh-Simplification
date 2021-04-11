@@ -31,6 +31,7 @@ public:
 	}
 
 	float getCrease() const { return crease; }
+
 	Vertex* operator[](int i) const {
 		if (i == 0) return getVertex();
 		if (i == 1) return getNext()->getNext()->getVertex();
@@ -63,7 +64,12 @@ public:
 	void setCrease(float c) { crease = c; }
 
 	//fields
-	float getLength() const { return length;  }
+	float getLength() {
+		if (length == NULL) {
+			this->calculateLengthAndIndex();
+		}
+		return length;  
+	}
 	int getIndexA() const { return indexA; }
 	int getIndexB() const { return indexB; }
 
