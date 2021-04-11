@@ -3,11 +3,7 @@ Project for Computer Graphics - Group 4
 
 
 # TODO 
-- [x] Up and running
-- [x] Working random edge collapse
-- [ ] Task 1 complete
-
-...
+See [here](https://github.ugent.be/pkukoba/Computer-Graphics---Mesh-Simplification/projects/1)
 
 # Deadlines
 - By 3rd of April: Mandatory code check-up (be up and running, task 1 complete)
