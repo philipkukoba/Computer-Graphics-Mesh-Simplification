@@ -104,6 +104,9 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 
 	// add the triangle to the master list
 	triangles->Add(t);
+
+	//init QEM
+	InitQuadricErrorMetric(t);
 }
 
 void Mesh::removeTriangle(Triangle* t) {
@@ -563,15 +566,15 @@ void Mesh::CollapseShortestEdge() {
 
 	//if the heap is empty it needs to be refreshed
 	//if (edgesShortestFirst->empty()) {
-
+		//TODO
 	//}
 
 	Edge* e = edgesShortestFirst->top();
 
 	//controleer of de edge niet al verwijderd is in de bag
 	//of als de edge geen opposite heeft
-	while (e->getOpposite() == NULL || 
-		e->getIndexA() == e->getIndexB() || 
+	while (e->getOpposite() == NULL ||
+		e->getIndexA() == e->getIndexB() ||
 		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
 	{
 		edgesShortestFirst->pop();
@@ -649,7 +652,7 @@ void Mesh::Save() const
 	if (myfile.is_open())
 	{
 		//write all vertices
-		
+
 		int count = vertices->Count();
 		for (int i = 0; i < count; i++) {
 
@@ -676,7 +679,38 @@ void Mesh::Save() const
 
 		myfile.close();
 	}
-	else throw "Unable to save mesh.";
+	else throw "Unable to save mesh because failed to open a new file.";
+}
+
+void Mesh::InitQuadricErrorMetric(Triangle* const t)
+{
+	//find plane equation of triangle
+	//use the compute normal function
+	//normal has (a,b,c) coords
+	Vec3f n = ComputeNormal(t->operator[](0)->getPosition(), t->operator[](1)->getPosition(), t->operator[](2)->getPosition());
+	float d = n.Dot3(t->operator[](0)->getPosition()); //fill in arbitrary point;
+
+	// a² ab ac ad
+	// ab b² bc bd
+	// ac bc c² cd
+	// ad bd cd d²
+	float K[4][4] = {
+		{std::pow(n.x(),2), n.x()*n.y(), n.x()*n.z(), n.x()*d},
+		{n.x()*n.y(), std::pow(n.y(),2), n.y()*n.z(), n.y()*d},
+		{n.x()*n.z(), n.y()*n.z(), std::pow(n.z(),2), n.z()*d},
+		{n.x()*d, n.y()*d, n.z()*d, std::pow(d,2)}
+	};
+
+	//set Q for all vertices
+	for (int v = 0; v < 3; v++) {
+
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				t->operator[](v)->addToQ(i, j, K[i][j]);
+			}
+		}
+
+	}
 }
 
 // =================================================================

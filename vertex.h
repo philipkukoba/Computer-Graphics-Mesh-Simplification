@@ -9,7 +9,16 @@ class Vertex; //todo is this line needed?
 
 class Vertex {
 public:
-	Vertex(int i, const Vec3f& pos) : position(pos) { index = i; }
+	Vertex(int i, const Vec3f& pos) : position(pos) {
+		index = i;
+		
+		//init Q
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				Q[i][j] = 0;
+			}
+		}
+	}
 	virtual ~Vertex() { }
 
 	// =========
@@ -26,6 +35,12 @@ public:
 	void set(double x, double y, double z) { position.Set(x, y, z); }
 	void setIndex(int i) { index = i; }
 
+	float getQ(int row, int col) const { return Q[row][col]; };
+	void setQ(int row, int col, float val) { Q[row][col] = val; };
+	void addToQ(int row, int col, float val) { Q[row][col] += val; };
+
+	Vec3f getPosition() const { return position; };
+
 private:
 	// don't use these constructors
 	Vertex() { assert(0); }
@@ -39,6 +54,8 @@ private:
 	// this is the index from the original .obj file.
 	// technically not part of the half-edge data structure
 	int index;
+
+	float Q[4][4];
 
 	// NOTE: the vertices don't know anything about adjacency.  In some
 	// versions of this data structure they have a pointer to one of

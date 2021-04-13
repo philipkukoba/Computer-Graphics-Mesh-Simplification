@@ -32,6 +32,8 @@ private:
 	//glShader* shader;
 	//GLuint ProgramObject;
 
+	static void ProgressiveMeshing();
+
 	static ArgParser* args;
 	static Camera* camera;
 	static Mesh* mesh;

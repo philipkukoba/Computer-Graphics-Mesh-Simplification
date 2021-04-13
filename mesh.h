@@ -70,6 +70,8 @@ public:
 	void Simplification(int target_tri_count);
 	void Save() const;
 
+	void InitQuadricErrorMetric(Triangle* const t);
+
 private:
 	// ==============
 	// REPRESENTATION
