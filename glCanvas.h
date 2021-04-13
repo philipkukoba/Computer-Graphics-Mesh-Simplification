@@ -42,6 +42,10 @@ private:
 
 	static int display_list_index;
 
+	static int width;
+	static int height;
+
+
 public:
 	// Constructor and destructor
 	GLCanvas(void) { }

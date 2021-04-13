@@ -713,4 +713,15 @@ void Mesh::InitQuadricErrorMetric(Triangle* const t)
 	}
 }
 
+void Mesh::computeContractionAndError(Edge* const e)
+{
+	//compute optimal contraction target v_
+	float Q_[4][4] = {
+
+	};
+
+	//compute error (cost)
+
+}
+
 // =================================================================

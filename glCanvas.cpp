@@ -18,6 +18,10 @@ ArgParser* GLCanvas::args;
 Camera* GLCanvas::camera;
 Mesh* GLCanvas::mesh;
 
+
+int GLCanvas::width;
+int GLCanvas::height;
+
 void GLCanvas::InitLight() {
 	// Set the last component of the position to 0 to indicate
 	// a directional light source
@@ -77,6 +81,9 @@ void GLCanvas::display(void)
 // ========================================================
 
 void GLCanvas::reshape(int w, int h) {
+	width = w;
+	height = h;
+
 	// Set the OpenGL viewport to fill the entire window
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 

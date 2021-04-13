@@ -70,7 +70,9 @@ public:
 	void Simplification(int target_tri_count);
 	void Save() const;
 
+	// Quadric error metric helper functions
 	void InitQuadricErrorMetric(Triangle* const t);
+	void computeContractionAndError(Edge* const e);
 
 private:
 	// ==============

@@ -27,14 +27,14 @@ public:
 	float Get(int x, int y) const {
 		assert(x >= 0 && x < 4);
 		assert(y >= 0 && y < 4);
-		return data[y][x];
+		return data[x][y];
 	}
 
 	// MODIFIERS
 	void Set(int x, int y, float v) {
 		assert(x >= 0 && x < 4);
 		assert(y >= 0 && y < 4);
-		data[y][x] = v;
+		data[x][y] = v;
 	}
 	void SetToIdentity();
 	void Clear();
