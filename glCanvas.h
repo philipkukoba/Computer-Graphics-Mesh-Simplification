@@ -11,6 +11,7 @@
 #include "argparser.h"
 #include "camera.h"
 #include "mesh.h"
+#include "glsl.h"
 
 class GLCanvas {
 private:
@@ -25,6 +26,11 @@ private:
 	static void mouse(int button, int state, int x, int y);
 	static void motion(int x, int y);
 	static void keyboard(unsigned char key, int x, int y);
+
+	static void GouraudShading();
+	//glShaderManager SM;
+	//glShader* shader;
+	//GLuint ProgramObject;
 
 	static ArgParser* args;
 	static Camera* camera;

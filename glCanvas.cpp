@@ -142,11 +142,14 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 		break;
 	case 'g': case 'G':
 		args->gouraud = !args->gouraud;
+		GouraudShading();
 		Render();
 		break;
 	case 's': case 'S':
-		mesh->LoopSubdivision();
-		Render();
+		//mesh->LoopSubdivision();
+		//Render();
+		mesh->Save();
+		printf("The mesh has been saved");
 		break;
 	case 'd': case 'D':
 		mesh->Simplification((int)floor(0.9 * mesh->numTriangles()));
@@ -158,6 +161,13 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 	default:
 		printf("UNKNOWN KEYBOARD INPUT  '%c'\n", key);
 	}
+}
+
+void GLCanvas::GouraudShading()
+{
+	/*shader = SM.loadfromFile("GouraudShading_vshader.txt", "GouraudShading_fshader.txt");
+	ProgramObject = shader->GetProgramObject();
+	shader->begin();*/
 }
 
 // ========================================================

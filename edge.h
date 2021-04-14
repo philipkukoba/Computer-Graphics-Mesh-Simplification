@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <assert.h>
+#include <math.h>
 
 class Vertex;
 class Triangle;
@@ -30,6 +31,7 @@ public:
 	}
 
 	float getCrease() const { return crease; }
+
 	Vertex* operator[](int i) const {
 		if (i == 0) return getVertex();
 		if (i == 1) return getNext()->getNext()->getVertex();
@@ -44,12 +46,14 @@ public:
 		assert(e->opposite == NULL);
 		opposite = e;
 		e->opposite = this;
+		calculateLengthAndIndex();
 	}
 	void clearOpposite() {
 		if (opposite == NULL) return;
 		assert(opposite->opposite == this);
 		opposite->opposite = NULL;
 		opposite = NULL;
+		//calculateLengthAndIndex();
 	}
 	void setNext(Edge* e) {
 		assert(next == NULL);
@@ -59,9 +63,22 @@ public:
 	}
 	void setCrease(float c) { crease = c; }
 
+	//fields
+	float getLength() {
+		if (length == NULL) {
+			this->calculateLengthAndIndex();
+		}
+		return length;  
+	}
+	int getIndexA() const { return indexA; }
+	int getIndexB() const { return indexB; }
+
+	//define operator so we can store edges in sorted data structures
+	bool operator<(const Edge& e) { return length < e.length; }
+
 private:
-	Edge(const Edge&) { assert(0); }
-	Edge& operator=(const Edge&) { assert(0); }
+	Edge(const Edge&) = delete;
+	Edge& operator=(const Edge&) = delete;
 
 	// REPRESENTATION
 	// in the half edge data adjacency data structure, the edge stores everything!
@@ -70,6 +87,14 @@ private:
 	Edge* opposite;
 	Edge* next;
 	float crease;
+
+	float length;
+
+	int indexA;
+	int indexB;
+	
+	//bereken lengte van edge (voor shortest edge collapse)
+	void calculateLengthAndIndex();
 };
 
 #endif

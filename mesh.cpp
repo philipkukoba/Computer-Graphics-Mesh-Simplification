@@ -7,6 +7,11 @@
 #include <Windows.h>
 #include <GL/gl.h>
 
+#include <iostream>
+#include <fstream>
+#include <regex>
+#include <string>
+
 #include "mesh.h"
 #include "edge.h"
 #include "vertex.h"
@@ -22,11 +27,12 @@
 // CONSTRUCTORS & DESTRUCTORS
 // =======================================================================
 
-Mesh::Mesh() {
+Mesh::Mesh() : input_file(NULL) {
 	vertices = new Array<Vertex*>(INITIAL_VERTEX);
 	edges = new Bag<Edge*>(INITIAL_EDGE, Edge::extract_func);
 	triangles = new Bag<Triangle*>(INITIAL_TRIANGLE, Triangle::extract_func);
 	vertex_parents = new Bag<VertexParent*>(INITIAL_VERTEX, VertexParent::extract_func);
+	edgesShortestFirst = new priority_queue<Edge*, std::vector<Edge*>, EdgeComparer>();
 	bbox = NULL;
 }
 
@@ -83,9 +89,18 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	Edge* ea_op = getEdge((*ea)[1], (*ea)[0]);
 	Edge* eb_op = getEdge((*eb)[1], (*eb)[0]);
 	Edge* ec_op = getEdge((*ec)[1], (*ec)[0]);
-	if (ea_op != NULL) { ea_op->setOpposite(ea); }
-	if (eb_op != NULL) { eb_op->setOpposite(eb); }
-	if (ec_op != NULL) { ec_op->setOpposite(ec); }
+	if (ea_op != NULL) {
+		ea_op->setOpposite(ea);
+		edgesShortestFirst->push(ea_op);
+	}
+	if (eb_op != NULL) {
+		eb_op->setOpposite(eb);
+		edgesShortestFirst->push(eb_op);
+	}
+	if (ec_op != NULL) {
+		ec_op->setOpposite(ec);
+		edgesShortestFirst->push(ec_op);
+	}
 
 	// add the triangle to the master list
 	triangles->Add(t);
@@ -113,6 +128,7 @@ void Mesh::removeTriangle(Triangle* t) {
 
 Edge* Mesh::getEdge(Vertex* a, Vertex* b) const {
 	assert(edges != NULL);
+	//std::cout << "used edges->get(a,b)" << std::endl;
 	return edges->Get(a->getIndex(), b->getIndex());
 }
 
@@ -139,6 +155,7 @@ void Mesh::Load(const char* input_file) {
 		printf("ERROR! CANNOT OPEN '%s'\n", input_file);
 		return;
 	}
+	this->input_file = input_file;
 
 	char line[200];
 	char token[100];
@@ -434,13 +451,19 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 
 		// Remove old edges and triangles, add new ones
 		edges->Remove(AP);
-		edges->Remove(PQ); 
-		edges->Remove(QA); 
+		edges->Remove(PQ);
+		edges->Remove(QA);
 		triangles->Remove(APQ);
 
 		edges->Add(newBP);
 		edges->Add(newPQ);
 		edges->Add(newQB);
+
+		/*edgesShortestFirst->push(newBP);
+		edgesShortestFirst->push(newPQ);
+		edgesShortestFirst->push(newQB);*/
+
+
 		triangles->Add(newBPQ);
 
 		lastBP = newBP; // Remember for the next triangle
@@ -454,15 +477,17 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 
 		eCycle = nextECycle;
 
-		int missingOpposites = 0;
+
+		//debugging code
+		/*int missingOpposites = 0;
 		Iterator<Edge*>* iter = edges->StartIteration();
 		while (Edge* e = iter->GetNext()) {
 			if (e->getOpposite() == NULL)
 				missingOpposites++;
 		}
-		edges->EndIteration(iter);
-		std::cout
-			<< "Missing opposites (in method): " << missingOpposites << std::endl;
+		edges->EndIteration(iter);*/
+		/*std::cout
+			<< "Missing opposites (in method): " << missingOpposites << std::endl;*/
 	}
 
 
@@ -492,7 +517,7 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 	delete ABC; ABC = NULL;
 	delete AD; AD = NULL;
 	delete DB; DB = NULL;
-	delete BA; BA = NULL; 
+	delete BA; BA = NULL;
 	delete ADB; ADB = NULL;
 	if (deleteE)
 	{
@@ -534,11 +559,39 @@ void Mesh::CollapseRandomEdge() {
 	CollapseEdge(edges->ChooseRandom());
 }
 
+void Mesh::CollapseShortestEdge() {
+
+	//if the heap is empty it needs to be refreshed
+	//if (edgesShortestFirst->empty()) {
+
+	//}
+
+	Edge* e = edgesShortestFirst->top();
+
+	//controleer of de edge niet al verwijderd is in de bag
+	//of als de edge geen opposite heeft
+	while (e->getOpposite() == NULL || 
+		e->getIndexA() == e->getIndexB() || 
+		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
+	{
+		edgesShortestFirst->pop();
+		e = edgesShortestFirst->top();
+	}
+
+	CollapseEdge_EndPoint(edgesShortestFirst->top());
+	edgesShortestFirst->pop();
+}
+
 void Mesh::Simplification(int target_tri_count) {
+	//CollapseShortestEdge(); return;
+
 	while (numTriangles() > target_tri_count)
 	{
-		CollapseRandomEdge();
-		Iterator<Edge*>* iter = edges->StartIteration();
+		//CollapseRandomEdge();
+		CollapseShortestEdge();
+
+		//debug code
+		/*Iterator<Edge*>* iter = edges->StartIteration();
 		int missingNexts = 0;
 		int missingOpposites = 0;
 		int oppositesNotInEdges = 0;
@@ -556,7 +609,7 @@ void Mesh::Simplification(int target_tri_count) {
 					oppositesNotInEdges++;
 				if ((*e->getOpposite())[1] != (*e)[0])
 					oppositesDifferentPoints++;
-				
+
 				Triangle* t1 = e->getTriangle();
 				Triangle* t2 = e->getOpposite()->getTriangle();
 				Vec3f n1 = ComputeNormal((*t1)[0]->get(), (*t1)[1]->get(), (*t1)[2]->get());
@@ -568,8 +621,8 @@ void Mesh::Simplification(int target_tri_count) {
 					oppositesInFlippedTriangle++;
 			}
 		}
-		edges->EndIteration(iter);
-		std::cout << "Number of vertices: " << vertices->Count() << std::endl
+		edges->EndIteration(iter);*/
+		/*std::cout << "Number of vertices: " << vertices->Count() << std::endl
 			<< "Number of edges: " << edges->Count() << std::endl
 			<< "Number of triangles: " << triangles->Count() << std::endl
 			<< "Missing nexts: " << missingNexts << std::endl
@@ -577,8 +630,53 @@ void Mesh::Simplification(int target_tri_count) {
 			<< "Opposites of edges not contained in edges: " << oppositesNotInEdges << std::endl
 			<< "Opposites having different vertices: " << oppositesDifferentPoints << std::endl
 			<< "Opposites in same triangle (orientation): " << oppositesInSameTriangle << std::endl
-			<< "Opposites in flipped triangle (orientation): " << oppositesInFlippedTriangle << std::endl << std::endl;
+			<< "Opposites in flipped triangle (orientation): " << oppositesInFlippedTriangle << std::endl << std::endl;*/
 	}
+}
+
+void Mesh::Save() const
+{
+	int triangle_count = triangles->Count();
+	std::string str(input_file); // c string to c++ string
+	std::string filename = std::regex_replace(str, std::regex(".obj"), std::string(""))
+		+ "_simplified_to_"
+		+ std::to_string(triangle_count)
+		+ ".obj";
+
+	ofstream myfile(filename);
+
+
+	if (myfile.is_open())
+	{
+		//write all vertices
+		
+		int count = vertices->Count();
+		for (int i = 0; i < count; i++) {
+
+			//set new index (starts at 1)
+			vertices->operator[](i)->setIndex(i + 1);
+
+			myfile << "v "
+				+ std::to_string(vertices->operator[](i)->x()) + ' '
+				+ std::to_string(vertices->operator[](i)->y()) + ' '
+				+ std::to_string(vertices->operator[](i)->z()) + '\n';
+			//std::cout << "index: " << verticesSorted->operator[](i)->getIndex() << std::endl;
+		}
+
+		//write all faces (triangles)
+
+		Iterator<Triangle*>* iterT = triangles->StartIteration();
+		while (Triangle* t = iterT->GetNext()) {
+			myfile << "f "
+				+ std::to_string(t->operator[](0)->getIndex()) + ' '
+				+ std::to_string(t->operator[](1)->getIndex()) + ' '
+				+ std::to_string(t->operator[](2)->getIndex()) + '\n';
+		}
+		triangles->EndIteration(iterT);
+
+		myfile.close();
+	}
+	else throw "Unable to save mesh.";
 }
 
 // =================================================================
