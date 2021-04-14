@@ -178,11 +178,18 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 		Render();
 		break;
 	case 'q':  case 'Q':
-		exit(0);
+		exit(0); //quit
 		break;
+	case 'p': case 'P':
+		ProgressiveMeshing();
 	default:
 		printf("UNKNOWN KEYBOARD INPUT  '%c'\n", key);
 	}
+}
+
+void GLCanvas::ProgressiveMeshing() {
+	std::cout << "progressive meshing has not been implemented yet" << std::endl;
+	//TODO
 }
 
 void GLCanvas::GouraudShading()
