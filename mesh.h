@@ -8,6 +8,7 @@
 #include "boundingbox.h"
 #include "argparser.h"
 #include <queue>
+#include "matrix.h"
 
 class Vertex;
 class Triangle;
@@ -70,6 +71,10 @@ public:
 	void Simplification(int target_tri_count);
 	void Save() const;
 
+	int vertexSelectionMode = 0; // 0: not selecting, 1: select point 1, 2: select point 2
+	void selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h);
+	void removeSelectedVertices();
+
 private:
 	// ==============
 	// REPRESENTATION
@@ -89,6 +94,9 @@ private:
 	};
 
 	priority_queue <Edge*, vector<Edge*>, EdgeComparer>* edgesShortestFirst;
+
+	Vertex* selectedPoint1 = NULL;
+	Vertex* selectedPoint2 = NULL;
 };
 
 #endif

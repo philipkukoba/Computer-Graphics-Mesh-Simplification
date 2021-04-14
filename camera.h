@@ -18,6 +18,11 @@ public:
 	virtual void rotateCamera(float rx, float ry) = 0;
 	virtual void Print() = 0;
 
+	// REPRESENTATION
+	Vec3f center;
+	Vec3f direction;
+	Vec3f up;
+
 protected:
 	Camera() { assert(0); } // don't use
 
@@ -33,11 +38,6 @@ protected:
 		Vec3f::Cross3(answer, getHorizontal(), direction);
 		return answer;
 	}
-
-	// REPRESENTATION
-	Vec3f center;
-	Vec3f direction;
-	Vec3f up;
 };
 
 class PerspectiveCamera : public Camera {

@@ -18,6 +18,11 @@ ArgParser* GLCanvas::args;
 Camera* GLCanvas::camera;
 Mesh* GLCanvas::mesh;
 
+int GLCanvas::width;
+int GLCanvas::height;
+
+long long GLCanvas::lastClickTime = 0;
+
 void GLCanvas::InitLight() {
 	// Set the last component of the position to 0 to indicate
 	// a directional light source
@@ -77,6 +82,9 @@ void GLCanvas::display(void)
 // ========================================================
 
 void GLCanvas::reshape(int w, int h) {
+	width = w;
+	height = h;
+
 	// Set the OpenGL viewport to fill the entire window
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 
@@ -97,6 +105,12 @@ void GLCanvas::mouse(int button, int state, int x, int y) {
 	mouseButton = button;
 	mouseX = x;
 	mouseY = y;
+
+
+	long long currentClickTime = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
+	if (mouseButton == GLUT_LEFT_BUTTON && mesh->vertexSelectionMode != 0 && currentClickTime - lastClickTime> 100) // avoid double counting of clicks
+		mesh->selectPoint(camera->center, camera->direction, camera->up, x, y, width, height);
+	lastClickTime = currentClickTime;
 }
 
 // ========================================================
@@ -149,10 +163,18 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 		//mesh->LoopSubdivision();
 		//Render();
 		mesh->Save();
-		printf("The mesh has been saved");
+		printf("The mesh has been saved\n");
 		break;
 	case 'd': case 'D':
 		mesh->Simplification((int)floor(0.9 * mesh->numTriangles()));
+		Render();
+		break;
+	case 'v': case 'V':
+		mesh->vertexSelectionMode = true;
+		printf("Left mouse click to select a vertex.\n");
+		break;
+	case 'r': case 'R':
+		mesh->removeSelectedVertices();
 		Render();
 		break;
 	case 'q':  case 'Q':

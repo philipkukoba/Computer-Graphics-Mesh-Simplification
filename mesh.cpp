@@ -679,4 +679,86 @@ void Mesh::Save() const
 	else throw "Unable to save mesh.";
 }
 
+void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h)
+{
+	if (vertexSelectionMode == 0)
+		return;
+
+	// Find the line defined by the camera center and the selected 2D point (x, y).
+	// Step 1: Zero center in 2D: x - w/2. Similarly for y.
+	// Step 2: Negate: -(x - w/2) as in 2D x points to the right, but in 3D x point to the left (in 3D y points up, z forward, hence x left). Same for y.
+	// Step 3: Convert from pixels to world units. Let f be the focal length (distance to the camera plane; canonically this would be 1, but it does not matter). 
+	// Assuming a (canonical) horizontal field of view of 90°, the point (0, h/2), now transformed to (w/2, 0) should correspond to (1, 0, 1) in 3D 
+	//  (since (f, 0, f), (0, 0, 0) and (-f, 0, f) form an isosceles triangle with right angle at (0, 0, 0)). Thus converting from pixels to world units is done 
+	//	by multiplying by 2f/w. We then end up at (-(x - w/2)*2f/w, -(y - h/2)*2f/w, f) as transformed version of (x, y).
+	// Step 4: On this line we also have (by scaling) (-(x - w/2)*2/w, -(y - h/2)*2/w, 1).
+	// Step 4': However, after testing and working out an example, it turns out we need to put the z-coordinate here to 12/5 = 2.4 for some reason.
+	// Step 5: Transform to world coordinates using the camera matrix.
+
+	Vec3f line_dir(-(x - w/2.)*2./w, -(y - h/2.)*2./w, 2.4); // Direction vector of line between camera center (0, 0, 0) and clicked (2D) point - camera coordinates
+	
+	Vec3f look = cam_direction;
+	Vec3f up = cam_up - look * cam_up.Dot3(look); // up-direction of the camera, but orthogonal to the view direction
+	up.Normalize();
+	Vec3f hor;
+	Vec3f::Cross3(hor, up, look);
+	
+	Matrix transf; // from the camera system to world coordinates (i.e. maps (0, 0, 0, 1) to (cam_center, 1), and (1, 0, 0, 0) to (cam_horizontal, 0) etc.)
+	transf.Set(0, 0, hor.x()); transf.Set(0, 1, up.x()); transf.Set(0, 2, look.x()); transf.Set(0, 3, cam_center.x());
+	transf.Set(1, 0, hor.y()); transf.Set(1, 1, up.y()); transf.Set(1, 2, look.y()); transf.Set(1, 3, cam_center.y());
+	transf.Set(2, 0, hor.z()); transf.Set(2, 1, up.z()); transf.Set(2, 2, look.z()); transf.Set(2, 3, cam_center.z());
+	transf.Set(3, 0, 0.);				  transf.Set(3, 1, 0.);			transf.Set(3, 2, 0.);				 transf.Set(3, 3, 1.);
+
+	transf.TransformDirection(line_dir); // world coordinates
+	line_dir.Normalize();
+
+	// Naively iterate over all vertices, take closest (should be fast enough)
+	float min_dist = FLT_MAX;
+	Vertex* closestPoint = NULL;
+	for (int i = 0; i < vertices->Count(); i++)
+	{
+		Vertex* vertex = (*vertices)[i];
+		Vec3f q = vertex->get();
+		float dist = ((q - cam_center) - line_dir * (q - cam_center).Dot3(line_dir)).Length(); // Remove v component from q - p, where p is any point on the line. What remains is the orthogonal component.
+		if (dist < min_dist)
+		{
+			closestPoint = vertex;
+			min_dist = dist;
+		}
+	}
+
+	cout << "Selected the point at (" << closestPoint->x() << ", " << closestPoint->y() << ", " << closestPoint->z() << ") (index=" << closestPoint->getIndex() << "). ";
+	if (vertexSelectionMode == 1)
+	{
+		selectedPoint1 = closestPoint;
+		cout << "This is the first selected point. Select one more point." << endl;
+		vertexSelectionMode = 2;
+	}
+	else
+	{
+		selectedPoint2 = closestPoint;
+		cout << "This is the second selected point. Press 'r' to (try to) collapse the edge between them." << endl;
+		vertexSelectionMode = 0;
+	}
+}
+
+void Mesh::removeSelectedVertices()
+{
+	if (selectedPoint1 == NULL)
+	{
+		cout << "First select a point!" << endl;
+		return;
+	}
+	if (selectedPoint2 == NULL)
+	{
+		cout << "First select a second point!" << endl;
+		return;
+	}
+	Edge* e = getEdge(selectedPoint1, selectedPoint2); // If these do not form an edges, this will return NULL.
+	if (e == NULL)
+		cout << "The two selected vertices must form an edge!" << endl;
+	else
+		Mesh::CollapseEdge(e);
+}
+
 // =================================================================
