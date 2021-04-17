@@ -60,8 +60,8 @@ public:
 
 	BAG_ELEMENT ChooseRandom() const {
 		assert(Count() > 0);
-		int random_base = int(floor(rand() % size));
-		int c = random_base;
+		int random_base = int(floor(rand() % (size - 1))) + 1; // random between 1 and size - 1
+		int c = random_base; // Since size is prime, random_base is a generator modulo size. Hence we can get all entries as multiples (modulo size).
 		while (marks[c] != BAG_MARK_PRESENT)
 		{
 			c += random_base;

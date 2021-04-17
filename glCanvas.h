@@ -12,6 +12,7 @@
 #include "camera.h"
 #include "mesh.h"
 #include "glsl.h"
+#include <chrono>
 
 class GLCanvas {
 private:
@@ -45,10 +46,11 @@ private:
 	static int width;
 	static int height;
 
+	static long long lastClickTime;
 
 public:
 	// Constructor and destructor
-	GLCanvas(void) { }
+	GLCanvas(void) {  }
 	~GLCanvas(void) { }
 
 	// Set up the canvas and enter the rendering loop
