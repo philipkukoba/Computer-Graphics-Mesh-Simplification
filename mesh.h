@@ -97,6 +97,7 @@ private:
 	};
 
 	priority_queue <Edge*, vector<Edge*>, EdgeComparer>* edgesShortestFirst;
+	//std::vector<Edge*> edgesShortestFirst;
 
 	Vertex* selectedPoint1 = NULL;
 	Vertex* selectedPoint2 = NULL;

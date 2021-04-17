@@ -33,7 +33,10 @@ Mesh::Mesh() : input_file(NULL) {
 	edges = new Bag<Edge*>(INITIAL_EDGE, Edge::extract_func);
 	triangles = new Bag<Triangle*>(INITIAL_TRIANGLE, Triangle::extract_func);
 	vertex_parents = new Bag<VertexParent*>(INITIAL_VERTEX, VertexParent::extract_func);
+
 	edgesShortestFirst = new priority_queue<Edge*, std::vector<Edge*>, EdgeComparer>();
+	//edgesShortestFirst = std::vector<Edge*>();
+
 	bbox = NULL;
 }
 
@@ -93,14 +96,17 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	if (ea_op != NULL) {
 		ea_op->setOpposite(ea);
 		edgesShortestFirst->push(ea_op);
+		//edgesShortestFirst.push_back(ea_op);
 	}
 	if (eb_op != NULL) {
 		eb_op->setOpposite(eb);
 		edgesShortestFirst->push(eb_op);
+		//edgesShortestFirst.push_back(eb_op);
 	}
 	if (ec_op != NULL) {
 		ec_op->setOpposite(ec);
 		edgesShortestFirst->push(ec_op);
+		//edgesShortestFirst.push_back(ec_op);
 	}
 
 	// add the triangle to the master list
@@ -571,6 +577,8 @@ void Mesh::CollapseShortestEdge() {
 	//}
 
 	Edge* e = edgesShortestFirst->top();
+	//std::pop_heap(edgesShortestFirst.begin(), edgesShortestFirst.end());
+	//Edge* e = edgesShortestFirst.back();
 
 	//controleer of de edge niet al verwijderd is in de bag
 	//of als de edge geen opposite heeft
@@ -580,18 +588,25 @@ void Mesh::CollapseShortestEdge() {
 	{
 		edgesShortestFirst->pop();
 		e = edgesShortestFirst->top();
+		//std::pop_heap(edgesShortestFirst.begin(), edgesShortestFirst.end());
+		//Edge* e = edgesShortestFirst.back();	
 	}
 
-	CollapseEdge_EndPoint(edgesShortestFirst->top());
+	CollapseEdge_EndPoint(e);
+
 	edgesShortestFirst->pop();
+
 }
 
 void Mesh::Simplification(int target_tri_count) {
-	//CollapseShortestEdge(); return;
+
+	//shortest edge collapse with heap vector, the edges vector needs to be a heap first
+	//make heap from the vector
+	//std::make_heap(edgesShortestFirst.begin(), edgesShortestFirst.end(),
+	//	[](Edge* a, Edge* b) { return a->getLength() > a->getLength(); });
 
 	while (numTriangles() > target_tri_count)
 	{
-		//CollapseRandomEdge();
 		CollapseShortestEdge();
 
 		//debug code
@@ -749,9 +764,10 @@ void Mesh::computeContractionAndError(Edge* const e)
 	v_T.Transpose();
 
 	Matrix error = v_T * Q_ * v_;
+	Matrix* error_ = &error;
 
 	//set the error in the edge
-	e->setError(error);
+	e->setError(error_);
 }
 
 void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h)
