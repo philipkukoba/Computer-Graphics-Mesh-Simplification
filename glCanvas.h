@@ -59,6 +59,7 @@ public:
 
 	void initialize(ArgParser* _args, Mesh* _mesh);
 	static void Render();
+	static void DrawEllipsoid(unsigned int uiStacks, unsigned int uiSlices, float fA, float fB, float fC);
 };
 
 int HandleGLError();

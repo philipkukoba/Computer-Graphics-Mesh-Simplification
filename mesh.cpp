@@ -697,10 +697,10 @@ void Mesh::InitQuadricErrorMetric(Triangle* const t)
 	// ac bc c� cd
 	// ad bd cd d�
 	float K[4][4] = {
-		{std::pow(n.x(),2), n.x()*n.y(), n.x()*n.z(), n.x()*d},
-		{n.x()*n.y(), std::pow(n.y(),2), n.y()*n.z(), n.y()*d},
-		{n.x()*n.z(), n.y()*n.z(), std::pow(n.z(),2), n.z()*d},
-		{n.x()*d, n.y()*d, n.z()*d, std::pow(d,2)}
+		{std::pow(n.x(),2), n.x() * n.y(), n.x() * n.z(), n.x() * d},
+		{n.x() * n.y(), std::pow(n.y(),2), n.y() * n.z(), n.y() * d},
+		{n.x() * n.z(), n.y() * n.z(), std::pow(n.z(),2), n.z() * d},
+		{n.x() * d, n.y() * d, n.z() * d, std::pow(d,2)}
 	};
 
 	//set Q for all vertices
@@ -715,6 +715,7 @@ void Mesh::InitQuadricErrorMetric(Triangle* const t)
 	}
 }
 
+//based on Garland&Heckbert
 void Mesh::computeContractionAndError(Edge* const e)
 {
 	Vertex* v1 = e->operator[](0);
@@ -725,7 +726,7 @@ void Mesh::computeContractionAndError(Edge* const e)
 	Matrix Q2(v2->getQ());
 	Matrix Q_ = Q1 + Q2;
 
-	//set last row
+	//set last row to 0,0,0,1
 	Q_.Set(3, 0, 0);
 	Q_.Set(3, 1, 0);
 	Q_.Set(3, 2, 0);
@@ -733,8 +734,25 @@ void Mesh::computeContractionAndError(Edge* const e)
 
 	Q_.Inverse();
 
+	//make a matrix [0 0 0 1]^T
+	Matrix columnMatrix;
+	columnMatrix.Set(0, 0, 0);
+	columnMatrix.Set(1, 0, 0);
+	columnMatrix.Set(2, 0, 0);
+	columnMatrix.Set(3, 0, 1);
 
 	//compute error (cost)
+
+	Matrix v_ = Q_ * columnMatrix;
+
+	Matrix v_T = v_;
+	v_T.Transpose();
+
+	Matrix error = v_T * Q_ * v_;
+
+	//set the error in the edge
+	e->setError(error);
+}
 
 void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h)
 {
@@ -752,14 +770,14 @@ void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int 
 	// Step 4': However, after testing and working out an example, it turns out we need to put the z-coordinate here to 12/5 = 2.4 for some reason.
 	// Step 5: Transform to world coordinates using the camera matrix.
 
-	Vec3f line_dir(-(x - w/2.)*2./w, -(y - h/2.)*2./w, 2.4); // Direction vector of line between camera center (0, 0, 0) and clicked (2D) point - camera coordinates
-	
+	Vec3f line_dir(-(x - w / 2.) * 2. / w, -(y - h / 2.) * 2. / w, 2.4); // Direction vector of line between camera center (0, 0, 0) and clicked (2D) point - camera coordinates
+
 	Vec3f look = cam_direction;
 	Vec3f up = cam_up - look * cam_up.Dot3(look); // up-direction of the camera, but orthogonal to the view direction
 	up.Normalize();
 	Vec3f hor;
 	Vec3f::Cross3(hor, up, look);
-	
+
 	Matrix transf; // from the camera system to world coordinates (i.e. maps (0, 0, 0, 1) to (cam_center, 1), and (1, 0, 0, 0) to (cam_horizontal, 0) etc.)
 	transf.Set(0, 0, hor.x()); transf.Set(0, 1, up.x()); transf.Set(0, 2, look.x()); transf.Set(0, 3, cam_center.x());
 	transf.Set(1, 0, hor.y()); transf.Set(1, 1, up.y()); transf.Set(1, 2, look.y()); transf.Set(1, 3, cam_center.y());

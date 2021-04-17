@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <GL/gl.h>
 #include <GL/glut.h>
+#include <corecrt_math_defines.h>
 
 // static variables of GLCanvas class
 
@@ -264,6 +265,22 @@ void GLCanvas::Render() {
 	// =========================================================
 	glEndList();
 	glutPostRedisplay();
+}
+
+void GLCanvas::DrawEllipsoid(unsigned int uiStacks, unsigned int uiSlices, float fA, float fB, float fC) {
+	float tStep = (M_PI) / (float)uiSlices;
+	float sStep = (M_PI) / (float)uiStacks;
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	for (float t = -M_PI / 2; t <= (M_PI / 2) + .0001; t += tStep)
+	{
+		glBegin(GL_TRIANGLE_STRIP);
+		for (float s = -M_PI; s <= M_PI + .0001; s += sStep)
+		{
+			glVertex3f(fA * cos(t) * cos(s), fB * cos(t) * sin(s), fC * sin(t));
+			glVertex3f(fA * cos(t + tStep) * cos(s), fB * cos(t + tStep) * sin(s), fC * sin(t + tStep));
+		}
+		glEnd();
+	}
 }
 
 int HandleGLError() {
