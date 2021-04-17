@@ -35,6 +35,7 @@ public:
 	void set(double x, double y, double z) { position.Set(x, y, z); }
 	void setIndex(int i) { index = i; }
 
+	float* getQ() const { return (float*) Q; };
 	float getQ(int row, int col) const { return Q[row][col]; };
 	void setQ(int row, int col, float val) { Q[row][col] = val; };
 	void addToQ(int row, int col, float val) { Q[row][col] += val; };

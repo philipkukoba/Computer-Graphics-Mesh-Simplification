@@ -18,6 +18,7 @@
 #include "triangle.h"
 #include "vertex_parent.h"
 #include "glCanvas.h"
+#include "matrix.h"
 
 #define INITIAL_VERTEX 10000
 #define INITIAL_EDGE 10000
@@ -682,6 +683,7 @@ void Mesh::Save() const
 	else throw "Unable to save mesh because failed to open a new file.";
 }
 
+//todo can be rewritten with Matrix class
 void Mesh::InitQuadricErrorMetric(Triangle* const t)
 {
 	//find plane equation of triangle
@@ -715,10 +717,22 @@ void Mesh::InitQuadricErrorMetric(Triangle* const t)
 
 void Mesh::computeContractionAndError(Edge* const e)
 {
-	//compute optimal contraction target v_
-	float Q_[4][4] = {
+	Vertex* v1 = e->operator[](0);
+	Vertex* v2 = e->operator[](1);
 
-	};
+	//compute optimal contraction target v_
+	Matrix Q1(v1->getQ());
+	Matrix Q2(v2->getQ());
+	Matrix Q_ = Q1 + Q2;
+
+	//set last row
+	Q_.Set(3, 0, 0);
+	Q_.Set(3, 1, 0);
+	Q_.Set(3, 2, 0);
+	Q_.Set(3, 3, 1);
+
+	Q_.Inverse();
+
 
 	//compute error (cost)
 
