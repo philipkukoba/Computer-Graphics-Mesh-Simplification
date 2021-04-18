@@ -10,7 +10,7 @@ Edge::Edge(Vertex* v, Triangle* t): length(NULL), indexA(NULL), indexB(NULL) {
 	next = NULL;
 	opposite = NULL;
 	crease = 0;
-	v_ = new Matrix();
+	//v_ = new Matrix();
 }
 
 Edge::~Edge() {

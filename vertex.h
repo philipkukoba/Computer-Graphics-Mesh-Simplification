@@ -46,6 +46,7 @@ public:
 	void setQ(int row, int col, float val) { Q->Set(row, col, val); };
 	void addToQ(int row, int col, float val) { Q->Add(row, col, val); };
 	//float* getQ() const { return (float*) Q; };
+	void setQ(Matrix* m) { this->Q = m; }
 
 	Vec3f getPosition() const { return position; };
 

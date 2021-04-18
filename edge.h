@@ -80,8 +80,11 @@ public:
 	float getError() const { return error; }
 	void setError(float e) { this->error = e; }
 	
-	Matrix* getV_() const { return v_; }
-	void setV_(Matrix* v__) { this->v_ = v__; }
+	/*Matrix* getV_() const { return v_; }
+	void setV_(Matrix* v__) { this->v_ = v__; }*/
+
+	Vec4f getV_() const { return v_; }
+	void setV_(Vec4f v__) { this->v_ = v__; }
 
 private:
 	Edge(const Edge&) = delete;
@@ -105,7 +108,8 @@ private:
 
 	// for quadric error metric
 	float error;
-	Matrix* v_; //matrix representation of a vertex
+	//Matrix* v_; //matrix representation of a vertex
+	Vec4f v_;
 };
 
 #endif

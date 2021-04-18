@@ -659,14 +659,36 @@ void Mesh::CollapseQEM() {
 	int i = (*e)[1]->getIndex();
 	//connectedEdges[(*e)[1]->getIndex()].
 
+	//std::cout << e->getV_()->Get(0, 0) << std::endl;
+	//std::cout << e->getV_()->Get(1, 0) << std::endl;
+	//std::cout << e->getV_()->Get(2, 0) << std::endl << std::endl;
+	std::cout << e->getV_().x() << std::endl;
+	std::cout << e->getV_().y() << std::endl;
+	std::cout << e->getV_().z() << std::endl << std::endl;
+	//std::cout << e->getV_().w() << std::endl;
+
 	//collapse (v1 gets deleted)
-	CollapseEdge(e, e->getV_()->Get(0, 0), e->getV_()->Get(1, 0), e->getV_()->Get(2, 0));
+
+	Vertex* v1 = e->operator[](1);
+	Vertex* v2 = e->operator[](0);
+
+	Matrix Q1_copy(*(v1->getQ()));
+	Matrix Q2_copy(*(v2->getQ()));
+
+	CollapseEdge(e, e->getV_().x(), e->getV_().y(), e->getV_().z());
 
 	//update all edges involving v1
 	//recalculate
-	for (auto it : connectedEdges[i]) {
-		computeContractionAndError(it);
-	}
+
+	//recalculate Q for new point
+	Matrix* newQ = new Matrix();
+	*newQ = Q1_copy + Q2_copy;
+	v2->setQ(newQ); 
+
+	//TODO save vertices instead of edges and use edges->Get(v1,v2)
+	//for (auto it : connectedEdges[i]) {
+	//	computeContractionAndError(it);
+	//}
 
 	//delete connectedEdges[i]
 	//TODO is this needed?
@@ -682,10 +704,18 @@ void Mesh::Simplification(int target_tri_count) {
 	//std::make_heap(edgesShortestFirst.begin(), edgesShortestFirst.end(),
 	//	[](Edge* a, Edge* b) { return a->getLength() > a->getLength(); });
 
+	//QEM initialisation
+	Iterator<Edge*>* iter = edges->StartIteration();
+	while (Edge* e = iter->GetNext()) {
+		computeContractionAndError(e);
+	}
+	edges->EndIteration(iter);
+
 	while (numTriangles() > target_tri_count)
 	{
 		//CollapseShortestEdge();
 		CollapseQEM();
+		//return;
 
 		//debug code
 		/*Iterator<Edge*>* iter = edges->StartIteration();
@@ -821,35 +851,56 @@ void Mesh::computeContractionAndError(Edge* const e)
 	Matrix* Q2 = v2->getQ();
 	Matrix Q_ = (*Q1) + (*Q2);
 
-	//set last row to 0,0,0,1
-	Q_.Set(3, 0, 0);
-	Q_.Set(3, 1, 0);
-	Q_.Set(3, 2, 0);
-	Q_.Set(3, 3, 1);
 
-	Q_.Inverse();
+
+	//new
+	Matrix Q_inv(Q_);
+
+	//set last row to 0,0,0,1
+	Q_inv.Set(3, 0, 0);
+	Q_inv.Set(3, 1, 0);
+	Q_inv.Set(3, 2, 0);
+	Q_inv.Set(3, 3, 1);
+
+	Q_inv.Inverse();
+
+	//Q_.Inverse();
 
 	//make a matrix [0 0 0 1]^T
-	Matrix columnMatrix;
-	columnMatrix.Set(0, 0, 0);
-	columnMatrix.Set(1, 0, 0);
-	columnMatrix.Set(2, 0, 0);
-	columnMatrix.Set(3, 0, 1);
+	Vec4f v_2(0, 0, 0, 1);
+
+	//new
+	//Matrix columnMatrix;
+	//
+	//
+	//columnMatrix.Set(0, 0, 0);
+	//columnMatrix.Set(1, 0, 0);
+	//columnMatrix.Set(2, 0, 0);
+	//columnMatrix.Set(3, 0, 1);
 
 	//compute error (cost)
 
-	Matrix v_ = Q_ * columnMatrix;
+	//Matrix v_ = Q_ * columnMatrix;
+	
+	//new
+	Q_inv.Transform(v_2);
+	v_2.Negate();
+	Vec4f v_2_copy(v_2);
+	Q_.Transform(v_2_copy);
+	float error = v_2.Dot3(v_2_copy);
 
-	Matrix v_T = v_;
-	v_T.Transpose();
+	//Matrix v_T = v_;
+	//v_T.Transpose();
 
-	Matrix error = v_T * Q_ * v_;
+	//Matrix error = v_T * Q_ * v_;
 
 	//set the error in the edge
-	e->setError(error.Get(0,0));
+	//e->setError(error.Get(0,0));
+	e->setError(error);
 
 	//set the v_ on the edge
-	e->setV_(&v_);
+	//Matrix* v__ = &v_;
+	e->setV_(v_2);
 }
 
 void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h)
