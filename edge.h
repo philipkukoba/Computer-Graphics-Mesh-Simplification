@@ -77,8 +77,11 @@ public:
 	//define operator so we can store edges in sorted data structures
 	bool operator<(const Edge& e) { return length < e.length; }
 
-	Matrix* getError() const { return error; }
-	void setError(Matrix* e) { this->error = e; }
+	float getError() const { return error; }
+	void setError(float e) { this->error = e; }
+	
+	Matrix* getV_() const { return v_; }
+	void setV_(Matrix* v__) { this->v_ = v__; }
 
 private:
 	Edge(const Edge&) = delete;
@@ -101,7 +104,8 @@ private:
 	void calculateLengthAndIndex();
 
 	// for quadric error metric
-	Matrix* error;
+	float error;
+	Matrix* v_; //matrix representation of a vertex
 };
 
 #endif

@@ -10,7 +10,7 @@
 
 class Matrix {
 public:
-	Matrix() { Clear(); }
+	Matrix() { Clear(); } //clear initialises the data array
 	Matrix(const Matrix& m);
 	Matrix(const float* m);
 	~Matrix() {}
@@ -36,6 +36,14 @@ public:
 		assert(col >= 0 && col < 4);
 		data[row][col] = v;
 	}
+
+	void Add(int row, int col, float v) {
+		assert(row >= 0 && row < 4);
+		assert(col >= 0 && col < 4);
+		float old_val = data[row][col];
+		data[row][col] = old_val + v;
+	}
+
 	void SetToIdentity();
 	void Clear();
 

@@ -68,6 +68,7 @@ public:
 	void CollapseEdge_EndPoint(Edge* e, bool); // Will be the base method where the others are built on top of
 	void CollapseRandomEdge();
 	void CollapseShortestEdge();
+	void CollapseQEM();
 	void Simplification(int target_tri_count);
 	void Save() const;
 
@@ -96,8 +97,18 @@ private:
 		}
 	};
 
+	class EdgeComparerQEM {
+	public:
+		int operator() (Edge* const e1, Edge* const e2) {
+			return e1->getError() > e2->getError();
+		}
+	};
+
 	priority_queue <Edge*, vector<Edge*>, EdgeComparer>* edgesShortestFirst;
+	priority_queue <Edge*, vector<Edge*>, EdgeComparerQEM>* edgesQEM;
 	//std::vector<Edge*> edgesShortestFirst;
+
+	std::vector < std::vector<Edge*>> connectedEdges;
 
 	Vertex* selectedPoint1 = NULL;
 	Vertex* selectedPoint2 = NULL;

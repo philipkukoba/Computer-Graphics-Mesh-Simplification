@@ -35,6 +35,7 @@ Mesh::Mesh() : input_file(NULL) {
 	vertex_parents = new Bag<VertexParent*>(INITIAL_VERTEX, VertexParent::extract_func);
 
 	edgesShortestFirst = new priority_queue<Edge*, std::vector<Edge*>, EdgeComparer>();
+	edgesQEM = new priority_queue<Edge*, std::vector<Edge*>, EdgeComparerQEM>();
 	//edgesShortestFirst = std::vector<Edge*>();
 
 	bbox = NULL;
@@ -89,24 +90,44 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	edges->Add(eb);
 	edges->Add(ec);
 
+	// add edges to connectedEdges vector
+	connectedEdges[a->getIndex()].push_back(ea);
+	connectedEdges[b->getIndex()].push_back(eb);
+	connectedEdges[c->getIndex()].push_back(ec);
+
 	// connect up with opposite edges (if they exist)
 	Edge* ea_op = getEdge((*ea)[1], (*ea)[0]);
 	Edge* eb_op = getEdge((*eb)[1], (*eb)[0]);
 	Edge* ec_op = getEdge((*ec)[1], (*ec)[0]);
 	if (ea_op != NULL) {
 		ea_op->setOpposite(ea);
+
 		edgesShortestFirst->push(ea_op);
 		//edgesShortestFirst.push_back(ea_op);
+		edgesQEM->push(ea_op);
+
+		connectedEdges[(*ea)[0]->getIndex()].push_back(ea_op);
+		connectedEdges[(*ea)[1]->getIndex()].push_back(ea_op);
 	}
 	if (eb_op != NULL) {
 		eb_op->setOpposite(eb);
+
 		edgesShortestFirst->push(eb_op);
 		//edgesShortestFirst.push_back(eb_op);
+		edgesQEM->push(eb_op);
+
+		connectedEdges[(*eb)[0]->getIndex()].push_back(eb_op);
+		connectedEdges[(*eb)[1]->getIndex()].push_back(eb_op);
 	}
 	if (ec_op != NULL) {
 		ec_op->setOpposite(ec);
+
 		edgesShortestFirst->push(ec_op);
 		//edgesShortestFirst.push_back(ec_op);
+		edgesQEM->push(ec_op);
+
+		connectedEdges[(*ec)[0]->getIndex()].push_back(ec_op);
+		connectedEdges[(*ec)[1]->getIndex()].push_back(ec_op);
 	}
 
 	// add the triangle to the master list
@@ -180,6 +201,17 @@ void Mesh::Load(const char* input_file) {
 	int index = 0;
 	int vert_count = 0;
 	int vert_index = 1;
+
+	//count total amount of vertices
+	int n = 0;
+	while (fgets(line, 200, objfile)) {
+		if (line[0] == 'v' /* && line[1] == '0' */ ) n++;
+		else break;
+	}
+	connectedEdges = std::vector<std::vector<Edge*>>(n, std::vector<Edge*>());
+	//close and reopen again
+	fclose(objfile);
+	objfile = fopen(input_file, "r");
 
 	while (fgets(line, 200, objfile)) {
 
@@ -564,7 +596,6 @@ void Mesh::CollapseEdge(Edge* e)
 	return CollapseEdge_MidPoint(e);
 }
 
-
 void Mesh::CollapseRandomEdge() {
 	CollapseEdge(edges->ChooseRandom());
 }
@@ -598,6 +629,52 @@ void Mesh::CollapseShortestEdge() {
 
 }
 
+void Mesh::CollapseQEM() {
+
+	//if the heap is empty it needs to be refreshed
+	//if (edgesQEM->empty()) {
+		//TODO
+	//}
+
+	Edge* e = edgesQEM->top();
+	//std::pop_heap(edgesQEM.begin(), edgesQEM.end());
+	//Edge* e = edgesQEM.back();
+
+	//controleer of de edge niet al verwijderd is in de bag
+	//of als de edge geen opposite heeft
+	while (e->getOpposite() == NULL ||
+		e->getIndexA() == e->getIndexB() ||
+		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
+	{
+		edgesQEM->pop();
+		e = edgesQEM->top();
+		//std::pop_heap(edgesQEM.begin(), edgesQEM.end());
+		//Edge* e = edgesQEM.back();	
+	}
+
+	//collapse and update
+
+	//first find all edges with v1 in them
+	//just store index of e[1] (= v1)
+	int i = (*e)[1]->getIndex();
+	//connectedEdges[(*e)[1]->getIndex()].
+
+	//collapse (v1 gets deleted)
+	CollapseEdge(e, e->getV_()->Get(0, 0), e->getV_()->Get(1, 0), e->getV_()->Get(2, 0));
+
+	//update all edges involving v1
+	//recalculate
+	for (auto it : connectedEdges[i]) {
+		computeContractionAndError(it);
+	}
+
+	//delete connectedEdges[i]
+	//TODO is this needed?
+
+	edgesQEM->pop();
+
+}
+
 void Mesh::Simplification(int target_tri_count) {
 
 	//shortest edge collapse with heap vector, the edges vector needs to be a heap first
@@ -607,7 +684,8 @@ void Mesh::Simplification(int target_tri_count) {
 
 	while (numTriangles() > target_tri_count)
 	{
-		CollapseShortestEdge();
+		//CollapseShortestEdge();
+		CollapseQEM();
 
 		//debug code
 		/*Iterator<Edge*>* iter = edges->StartIteration();
@@ -673,7 +751,7 @@ void Mesh::Save() const
 		for (int i = 0; i < count; i++) {
 
 			//set new index (starts at 1)
-			vertices->operator[](i)->setIndex(i + 1);
+			vertices->operator[](i)->setNewFileIndex(i + 1);
 
 			myfile << "v "
 				+ std::to_string(vertices->operator[](i)->x()) + ' '
@@ -687,9 +765,9 @@ void Mesh::Save() const
 		Iterator<Triangle*>* iterT = triangles->StartIteration();
 		while (Triangle* t = iterT->GetNext()) {
 			myfile << "f "
-				+ std::to_string(t->operator[](0)->getIndex()) + ' '
-				+ std::to_string(t->operator[](1)->getIndex()) + ' '
-				+ std::to_string(t->operator[](2)->getIndex()) + '\n';
+				+ std::to_string(t->operator[](0)->getNewFileIndex()) + ' '
+				+ std::to_string(t->operator[](1)->getNewFileIndex()) + ' '
+				+ std::to_string(t->operator[](2)->getNewFileIndex()) + '\n';
 		}
 		triangles->EndIteration(iterT);
 
@@ -698,7 +776,6 @@ void Mesh::Save() const
 	else throw "Unable to save mesh because failed to open a new file.";
 }
 
-//todo can be rewritten with Matrix class
 void Mesh::InitQuadricErrorMetric(Triangle* const t)
 {
 	//find plane equation of triangle
@@ -707,10 +784,10 @@ void Mesh::InitQuadricErrorMetric(Triangle* const t)
 	Vec3f n = ComputeNormal(t->operator[](0)->getPosition(), t->operator[](1)->getPosition(), t->operator[](2)->getPosition());
 	float d = n.Dot3(t->operator[](0)->getPosition()); //fill in arbitrary point;
 
-	// a� ab ac ad
-	// ab b� bc bd
-	// ac bc c� cd
-	// ad bd cd d�
+	// a^2 ab ac ad
+	// ab b^2 bc bd
+	// ac bc c^2 cd
+	// ad bd cd d^2
 	float K[4][4] = {
 		{std::pow(n.x(),2), n.x() * n.y(), n.x() * n.z(), n.x() * d},
 		{n.x() * n.y(), std::pow(n.y(),2), n.y() * n.z(), n.y() * d},
@@ -737,9 +814,12 @@ void Mesh::computeContractionAndError(Edge* const e)
 	Vertex* v2 = e->operator[](1);
 
 	//compute optimal contraction target v_
-	Matrix Q1(v1->getQ());
-	Matrix Q2(v2->getQ());
-	Matrix Q_ = Q1 + Q2;
+	//Matrix Q1(v1->getQ());
+	//Matrix Q2(v2->getQ());
+	//Matrix Q_ = Q1 + Q2;
+	Matrix* Q1 = v1->getQ();
+	Matrix* Q2 = v2->getQ();
+	Matrix Q_ = (*Q1) + (*Q2);
 
 	//set last row to 0,0,0,1
 	Q_.Set(3, 0, 0);
@@ -764,10 +844,12 @@ void Mesh::computeContractionAndError(Edge* const e)
 	v_T.Transpose();
 
 	Matrix error = v_T * Q_ * v_;
-	Matrix* error_ = &error;
 
 	//set the error in the edge
-	e->setError(error_);
+	e->setError(error.Get(0,0));
+
+	//set the v_ on the edge
+	e->setV_(&v_);
 }
 
 void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h)
