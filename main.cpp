@@ -3,7 +3,8 @@
 
 #include "argparser.h"
 #include "glCanvas.h"
-#include <GL/freeglut_std.h>  // VS might suggest here to install the package even though u have it installed -> reinstall it
+#include <GL/freeglut_std.h>  // VS might suggest here to install the package even though you have it installed -> reinstall it
+
 
 int main(int argc, char* argv[]) {
 	//srand48(0);
@@ -16,7 +17,7 @@ int main(int argc, char* argv[]) {
 
 	//too lazy to input file location everytime (philip)
 	input_file = "C:/Users/p_kuk/Desktop/UNI/Computer Graphics/project/data/bunny_1k.obj"; // Philip
-	input_file = "../../data/bunny_40k.obj"; // Laurens
+	input_file = "../../data/bunny_1k.obj"; // Laurens
 
 	/*if (args->input_file == NULL)
 	{
@@ -28,10 +29,6 @@ int main(int argc, char* argv[]) {
 	}*/
 
 	mesh->Load(input_file.c_str());
-
-	//mesh->CollapseRandomEdge();
-
-	//mesh->Simplification(mesh->numTriangles() * 0.9); //simplify by 10%
 
 	GLCanvas glcanvas;
 	glcanvas.initialize(args, mesh);

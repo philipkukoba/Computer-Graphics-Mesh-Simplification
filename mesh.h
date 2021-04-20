@@ -61,11 +61,11 @@ public:
 	// OTHER FUNCTIONS
 	void Paint(ArgParser* args);
 	void LoopSubdivision();
-	void CollapseEdge(Edge* e, float, float, float); // General collapse point
+	void CollapseEdge(Edge* e, float, float, float); // General collapse point, collapses all instances of AB (second level base method)
 	void CollapseEdge(Edge* e); // Default value for the collapse point
 	void CollapseEdge_MidPoint(Edge* e);
 	void CollapseEdge_EndPoint(Edge* e);
-	void CollapseEdge_EndPoint(Edge* e, bool); // Will be the base method where the others are built on top of
+	void CollapseOneEdge_EndPoint(Edge* e); // Will be the base method where the others are built on top of, only collapses one instance of AB (does not delete AB or A)
 	void CollapseRandomEdge();
 	void CollapseShortestEdge();
 	void Simplification(int target_tri_count);
@@ -74,6 +74,8 @@ public:
 	int vertexSelectionMode = 0; // 0: not selecting, 1: select point 1, 2: select point 2
 	void selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h);
 	void removeSelectedVertices();
+
+	void InitQuadricErrorMetric(Triangle* const);
 
 private:
 	// ==============

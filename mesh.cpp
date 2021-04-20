@@ -106,7 +106,7 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	triangles->Add(t);
 
 	//init QEM
-	InitQuadricErrorMetric(t);
+	//InitQuadricErrorMetric(t);
 }
 
 void Mesh::removeTriangle(Triangle* t) {
@@ -361,7 +361,7 @@ void Mesh::LoopSubdivision() {
 // SIMPLIFICATION
 // =================================================================
 
-void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
+void Mesh::CollapseOneEdge_EndPoint(Edge* e) {
 	// Collapses the edge AB to the single point B.
 
 	assert(e->getNext() != NULL);
@@ -406,15 +406,7 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 		Edge* PQ = AP->getNext();
 		Edge* QA = PQ->getNext();
 		Vertex* P = AP->getVertex(); Vertex* Q = PQ->getVertex();
-		if (A->getIndex() == P->getIndex() || A->getIndex() == Q->getIndex())
-		{
-			bool b = A == B;
-			int debugme2 = 0; // TODO: can happen(!): AA is an edge  (sometimes only (but not always!) indices are the same, but points are different)
-		}
 		Triangle* APQ = AP->getTriangle();
-
-		if (P == B || P == Q || Q == B)
-			int debugme3 = 0; // TODO: P = B can happen!
 
 		Triangle* newBPQ = new Triangle();
 		Edge* newBP = new Edge(P, newBPQ); // Will replace AP
@@ -479,18 +471,6 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 		// Includes deleting eCycle (AP).
 
 		eCycle = nextECycle;
-
-
-		//debugging code
-		/*int missingOpposites = 0;
-		Iterator<Edge*>* iter = edges->StartIteration();
-		while (Edge* e = iter->GetNext()) {
-			if (e->getOpposite() == NULL)
-				missingOpposites++;
-		}
-		edges->EndIteration(iter);*/
-		/*std::cout
-			<< "Missing opposites (in method): " << missingOpposites << std::endl;*/
 	}
 
 
@@ -522,26 +502,29 @@ void Mesh::CollapseEdge_EndPoint(Edge* e, bool deleteE) {
 	delete DB; DB = NULL;
 	delete BA; BA = NULL;
 	delete ADB; ADB = NULL;
-	if (deleteE)
-	{
-		delete A; A = NULL;
-		delete AB; AB = NULL;
-	}
+
+	// IMPORTANT: does not delete A or e!
 }
 
-void Mesh::CollapseEdge_EndPoint(Edge* e) {
-	// When collapsing an edge AB to B is the final goal, we should delete A and e=AB.
-	CollapseEdge_EndPoint(e, true);
-}
 
 void Mesh::CollapseEdge(Edge* e, float collapse_x, float collapse_y, float collapse_z)
 {
 	Vertex* A = (*e)[1];
 	Vertex* B = (*e)[0];
-	CollapseEdge_EndPoint(e, false);
-	B->set(collapse_x, collapse_y, collapse_z);
-	delete A;
-	delete e;
+	vector<Edge*> allAB = edges->GetAll(B->getIndex(), A->getIndex());
+
+	for (Edge* e : allAB)
+	{
+		CollapseOneEdge_EndPoint(e);
+		delete e; e = NULL;
+	}
+	B->set(collapse_x, collapse_y, collapse_z); // Note that B is also (*e)[0] for all e in the loop.
+	delete A; A = NULL;
+}
+
+void Mesh::CollapseEdge_EndPoint(Edge* e) {
+	Vertex* B = (*e)[0];
+	CollapseEdge(e, B->x(), B->y(), B->z());
 }
 
 void Mesh::CollapseEdge_MidPoint(Edge* e)
@@ -589,52 +572,7 @@ void Mesh::Simplification(int target_tri_count) {
 	//CollapseShortestEdge(); return;
 
 	while (numTriangles() > target_tri_count)
-	{
-		//CollapseRandomEdge();
 		CollapseShortestEdge();
-
-		//debug code
-		/*Iterator<Edge*>* iter = edges->StartIteration();
-		int missingNexts = 0;
-		int missingOpposites = 0;
-		int oppositesNotInEdges = 0;
-		int oppositesDifferentPoints = 0;
-		int oppositesInSameTriangle = 0;
-		int oppositesInFlippedTriangle = 0;
-		while (Edge* e = iter->GetNext()) {
-			if (e->getNext() == NULL)
-				missingNexts++;
-			if (e->getOpposite() == NULL)
-				missingOpposites++;
-			else
-			{
-				if (edges->Member(e->getOpposite()) == 0)
-					oppositesNotInEdges++;
-				if ((*e->getOpposite())[1] != (*e)[0])
-					oppositesDifferentPoints++;
-
-				Triangle* t1 = e->getTriangle();
-				Triangle* t2 = e->getOpposite()->getTriangle();
-				Vec3f n1 = ComputeNormal((*t1)[0]->get(), (*t1)[1]->get(), (*t1)[2]->get());
-				Vec3f n2 = ComputeNormal((*t2)[0]->get(), (*t2)[1]->get(), (*t2)[2]->get());
-				if (n1 == n2)
-					oppositesInSameTriangle++;
-				n2.Negate();
-				if (n1 == n2)
-					oppositesInFlippedTriangle++;
-			}
-		}
-		edges->EndIteration(iter);*/
-		/*std::cout << "Number of vertices: " << vertices->Count() << std::endl
-			<< "Number of edges: " << edges->Count() << std::endl
-			<< "Number of triangles: " << triangles->Count() << std::endl
-			<< "Missing nexts: " << missingNexts << std::endl
-			<< "Missing opposites: " << missingOpposites << std::endl
-			<< "Opposites of edges not contained in edges: " << oppositesNotInEdges << std::endl
-			<< "Opposites having different vertices: " << oppositesDifferentPoints << std::endl
-			<< "Opposites in same triangle (orientation): " << oppositesInSameTriangle << std::endl
-			<< "Opposites in flipped triangle (orientation): " << oppositesInFlippedTriangle << std::endl << std::endl;*/
-	}
 }
 
 void Mesh::Save() const
@@ -753,6 +691,7 @@ void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int 
 	{
 		Vertex* vertex = (*vertices)[i];
 		Vec3f q = vertex->get();
+		Vec3f projQ = cam_center + (q - cam_center) - line_dir * (q - cam_center).Dot3(line_dir);
 		float dist = ((q - cam_center) - line_dir * (q - cam_center).Dot3(line_dir)).Length(); // Remove v component from q - p, where p is any point on the line. What remains is the orthogonal component.
 		if (dist < min_dist)
 		{
@@ -760,7 +699,7 @@ void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int 
 			min_dist = dist;
 		}
 	}
-
+	cout << min_dist << endl;
 	cout << "Selected the point at (" << closestPoint->x() << ", " << closestPoint->y() << ", " << closestPoint->z() << ") (index=" << closestPoint->getIndex() << "). ";
 	if (vertexSelectionMode == 1)
 	{
@@ -788,7 +727,12 @@ void Mesh::removeSelectedVertices()
 		cout << "First select a second point!" << endl;
 		return;
 	}
-	Edge* e = getEdge(selectedPoint1, selectedPoint2); // If these do not form an edges, this will return NULL.
+	if (selectedPoint1 == selectedPoint2)
+	{
+		cout << "Select two different points!" << endl;
+		return;
+	}
+	Edge* e = getEdge(selectedPoint1, selectedPoint2); // If these do not form an edge, this will return NULL.
 	if (e == NULL)
 		cout << "The two selected vertices must form an edge!" << endl;
 	else

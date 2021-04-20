@@ -4,6 +4,7 @@
 #include <assert.h>
 #include "utils.h"
 #include "math.h"
+#include <vector>
 
 #define MAX_ITERATORS 1
 #define LARGE_PRIME_A 10007
@@ -102,6 +103,27 @@ public:
 				if (_a == a && _b == b) {
 					return data[x];
 				}
+			}
+			x = skip(orig, x);
+		}
+	}
+
+
+	std::vector<BAG_ELEMENT> GetAll(int a, int b) const {
+		assert(a != b);
+		std::vector<BAG_ELEMENT> allX;
+		int orig = hash(a, b, 0);
+		int x = orig;
+		while (1) {
+			assert(x >= 0 && x < size);
+			if (marks[x] == BAG_MARK_NULL)
+				return allX;
+			if (marks[x] == BAG_MARK_PRESENT) {
+				int _a, _b, _c;
+				assert(data[x] != (BAG_ELEMENT)0);
+				extract_func(data[x], _a, _b, _c);
+				if (_a == a && _b == b)
+					allX.push_back(data[x]);
 			}
 			x = skip(orig, x);
 		}
