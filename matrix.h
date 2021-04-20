@@ -10,7 +10,7 @@
 
 class Matrix {
 public:
-	Matrix() { Clear(); }
+	Matrix() { Clear(); } //clear initialises the data array
 	Matrix(const Matrix& m);
 	Matrix(const float* m);
 	~Matrix() {}
@@ -24,18 +24,26 @@ public:
 		glMat[12] = data[0][3]; glMat[13] = data[1][3]; glMat[14] = data[2][3]; glMat[15] = data[3][3];
 		return glMat;
 	}
-	float Get(int x, int y) const {
-		assert(x >= 0 && x < 4);
-		assert(y >= 0 && y < 4);
-		return data[x][y];
+	float Get(int row, int col) const {
+		assert(row >= 0 && row < 4);
+		assert(col >= 0 && col < 4);
+		return data[row][col];
 	}
 
 	// MODIFIERS
-	void Set(int x, int y, float v) {
-		assert(x >= 0 && x < 4);
-		assert(y >= 0 && y < 4);
-		data[x][y] = v;
+	void Set(int row, int col, float v) {
+		assert(row >= 0 && row < 4);
+		assert(col >= 0 && col < 4);
+		data[row][col] = v;
 	}
+
+	void Add(int row, int col, float v) {
+		assert(row >= 0 && row < 4);
+		assert(col >= 0 && col < 4);
+		float old_val = data[row][col];
+		data[row][col] = old_val + v;
+	}
+
 	void SetToIdentity();
 	void Clear();
 

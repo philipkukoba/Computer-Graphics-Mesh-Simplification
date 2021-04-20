@@ -8,6 +8,7 @@
 
 class Vertex;
 class Triangle;
+class Matrix;
 
 // half-edge data structure
 
@@ -76,6 +77,15 @@ public:
 	//define operator so we can store edges in sorted data structures
 	bool operator<(const Edge& e) { return length < e.length; }
 
+	float getError() const { return error; }
+	void setError(float e) { this->error = e; }
+	
+	/*Matrix* getV_() const { return v_; }
+	void setV_(Matrix* v__) { this->v_ = v__; }*/
+
+	Vec4f getV_() const { return v_; }
+	void setV_(Vec4f v__) { this->v_ = v__; }
+
 private:
 	Edge(const Edge&) = delete;
 	Edge& operator=(const Edge&) = delete;
@@ -93,8 +103,13 @@ private:
 	int indexA;
 	int indexB;
 	
-	//bereken lengte van edge (voor shortest edge collapse)
+	//calculate length (for shortest edge collapse)
 	void calculateLengthAndIndex();
+
+	// for quadric error metric
+	float error;
+	//Matrix* v_; //matrix representation of a vertex
+	Vec4f v_;
 };
 
 #endif

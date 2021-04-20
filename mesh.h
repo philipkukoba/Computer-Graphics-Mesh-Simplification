@@ -68,9 +68,13 @@ public:
 	void CollapseOneEdge_EndPoint(Edge* e); // Will be the base method where the others are built on top of, only collapses one instance of AB (does not delete AB or A)
 	void CollapseRandomEdge();
 	void CollapseShortestEdge();
+	void CollapseQEM();
 	void Simplification(int target_tri_count);
 	void Save() const;
 
+	// Quadric error metric helper functions
+	void InitQuadricErrorMetric(Triangle* const t);
+	void computeContractionAndError(Edge* const e);
 	int vertexSelectionMode = 0; // 0: not selecting, 1: select point 1, 2: select point 2
 	void selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h);
 	void removeSelectedVertices();
@@ -95,7 +99,18 @@ private:
 		}
 	};
 
+	class EdgeComparerQEM {
+	public:
+		int operator() (Edge* const e1, Edge* const e2) {
+			return e1->getError() > e2->getError();
+		}
+	};
+
 	priority_queue <Edge*, vector<Edge*>, EdgeComparer>* edgesShortestFirst;
+	priority_queue <Edge*, vector<Edge*>, EdgeComparerQEM>* edgesQEM;
+	//std::vector<Edge*> edgesShortestFirst;
+
+	std::vector < std::vector<Edge*>> connectedEdges;
 
 	Vertex* selectedPoint1 = NULL;
 	Vertex* selectedPoint2 = NULL;

@@ -18,6 +18,7 @@
 #include "triangle.h"
 #include "vertex_parent.h"
 #include "glCanvas.h"
+#include "matrix.h"
 
 #define INITIAL_VERTEX 10000
 #define INITIAL_EDGE 10000
@@ -32,7 +33,11 @@ Mesh::Mesh() : input_file(NULL) {
 	edges = new Bag<Edge*>(INITIAL_EDGE, Edge::extract_func);
 	triangles = new Bag<Triangle*>(INITIAL_TRIANGLE, Triangle::extract_func);
 	vertex_parents = new Bag<VertexParent*>(INITIAL_VERTEX, VertexParent::extract_func);
+
 	edgesShortestFirst = new priority_queue<Edge*, std::vector<Edge*>, EdgeComparer>();
+	edgesQEM = new priority_queue<Edge*, std::vector<Edge*>, EdgeComparerQEM>();
+	//edgesShortestFirst = std::vector<Edge*>();
+
 	bbox = NULL;
 }
 
@@ -85,21 +90,44 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	edges->Add(eb);
 	edges->Add(ec);
 
+	// add edges to connectedEdges vector
+	connectedEdges[a->getIndex()].push_back(ea);
+	connectedEdges[b->getIndex()].push_back(eb);
+	connectedEdges[c->getIndex()].push_back(ec);
+
 	// connect up with opposite edges (if they exist)
 	Edge* ea_op = getEdge((*ea)[1], (*ea)[0]);
 	Edge* eb_op = getEdge((*eb)[1], (*eb)[0]);
 	Edge* ec_op = getEdge((*ec)[1], (*ec)[0]);
 	if (ea_op != NULL) {
 		ea_op->setOpposite(ea);
+
 		edgesShortestFirst->push(ea_op);
+		//edgesShortestFirst.push_back(ea_op);
+		edgesQEM->push(ea_op);
+
+		connectedEdges[(*ea)[0]->getIndex()].push_back(ea_op);
+		connectedEdges[(*ea)[1]->getIndex()].push_back(ea_op);
 	}
 	if (eb_op != NULL) {
 		eb_op->setOpposite(eb);
+
 		edgesShortestFirst->push(eb_op);
+		//edgesShortestFirst.push_back(eb_op);
+		edgesQEM->push(eb_op);
+
+		connectedEdges[(*eb)[0]->getIndex()].push_back(eb_op);
+		connectedEdges[(*eb)[1]->getIndex()].push_back(eb_op);
 	}
 	if (ec_op != NULL) {
 		ec_op->setOpposite(ec);
+
 		edgesShortestFirst->push(ec_op);
+		//edgesShortestFirst.push_back(ec_op);
+		edgesQEM->push(ec_op);
+
+		connectedEdges[(*ec)[0]->getIndex()].push_back(ec_op);
+		connectedEdges[(*ec)[1]->getIndex()].push_back(ec_op);
 	}
 
 	// add the triangle to the master list
@@ -173,6 +201,17 @@ void Mesh::Load(const char* input_file) {
 	int index = 0;
 	int vert_count = 0;
 	int vert_index = 1;
+
+	//count total amount of vertices
+	int n = 0;
+	while (fgets(line, 200, objfile)) {
+		if (line[0] == 'v' /* && line[1] == '0' */ ) n++;
+		else break;
+	}
+	connectedEdges = std::vector<std::vector<Edge*>>(n, std::vector<Edge*>());
+	//close and reopen again
+	fclose(objfile);
+	objfile = fopen(input_file, "r");
 
 	while (fgets(line, 200, objfile)) {
 
@@ -540,7 +579,6 @@ void Mesh::CollapseEdge(Edge* e)
 	return CollapseEdge_MidPoint(e);
 }
 
-
 void Mesh::CollapseRandomEdge() {
 	CollapseEdge(edges->ChooseRandom());
 }
@@ -553,6 +591,8 @@ void Mesh::CollapseShortestEdge() {
 	//}
 
 	Edge* e = edgesShortestFirst->top();
+	//std::pop_heap(edgesShortestFirst.begin(), edgesShortestFirst.end());
+	//Edge* e = edgesShortestFirst.back();
 
 	//controleer of de edge niet al verwijderd is in de bag
 	//of als de edge geen opposite heeft
@@ -562,17 +602,103 @@ void Mesh::CollapseShortestEdge() {
 	{
 		edgesShortestFirst->pop();
 		e = edgesShortestFirst->top();
+		//std::pop_heap(edgesShortestFirst.begin(), edgesShortestFirst.end());
+		//Edge* e = edgesShortestFirst.back();	
 	}
 
-	CollapseEdge_EndPoint(edgesShortestFirst->top());
+	CollapseEdge(e);
+
 	edgesShortestFirst->pop();
+
+}
+
+void Mesh::CollapseQEM() {
+
+	//if the heap is empty it needs to be refreshed
+	//if (edgesQEM->empty()) {
+		//TODO
+	//}
+
+	Edge* e = edgesQEM->top();
+	//std::pop_heap(edgesQEM.begin(), edgesQEM.end());
+	//Edge* e = edgesQEM.back();
+
+	//controleer of de edge niet al verwijderd is in de bag
+	//of als de edge geen opposite heeft
+	while (e->getOpposite() == NULL ||
+		e->getIndexA() == e->getIndexB() ||
+		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
+	{
+		edgesQEM->pop();
+		e = edgesQEM->top();
+		//std::pop_heap(edgesQEM.begin(), edgesQEM.end());
+		//Edge* e = edgesQEM.back();	
+	}
+
+	//collapse and update
+
+	//first find all edges with v1 in them
+	//just store index of e[1] (= v1)
+	int i = (*e)[1]->getIndex();
+	//connectedEdges[(*e)[1]->getIndex()].
+
+	//std::cout << e->getV_()->Get(0, 0) << std::endl;
+	//std::cout << e->getV_()->Get(1, 0) << std::endl;
+	//std::cout << e->getV_()->Get(2, 0) << std::endl << std::endl;
+	std::cout << e->getV_().x() << std::endl;
+	std::cout << e->getV_().y() << std::endl;
+	std::cout << e->getV_().z() << std::endl << std::endl;
+	//std::cout << e->getV_().w() << std::endl;
+
+	//collapse (v1 gets deleted)
+
+	Vertex* v1 = e->operator[](1);
+	Vertex* v2 = e->operator[](0);
+
+	Matrix Q1_copy(*(v1->getQ()));
+	Matrix Q2_copy(*(v2->getQ()));
+
+	CollapseEdge(e, e->getV_().x(), e->getV_().y(), e->getV_().z());
+
+	//update all edges involving v1
+	//recalculate
+
+	//recalculate Q for new point
+	Matrix* newQ = new Matrix();
+	*newQ = Q1_copy + Q2_copy;
+	v2->setQ(newQ); 
+
+	//TODO save vertices instead of edges and use edges->Get(v1,v2)
+	//for (auto it : connectedEdges[i]) {
+	//	computeContractionAndError(it);
+	//}
+
+	//delete connectedEdges[i]
+	//TODO is this needed?
+
+	edgesQEM->pop();
+
 }
 
 void Mesh::Simplification(int target_tri_count) {
-	//CollapseShortestEdge(); return;
+
+	//shortest edge collapse with heap vector, the edges vector needs to be a heap first
+	//make heap from the vector
+	//std::make_heap(edgesShortestFirst.begin(), edgesShortestFirst.end(),
+	//	[](Edge* a, Edge* b) { return a->getLength() > a->getLength(); });
+
+	//QEM initialisation
+	Iterator<Edge*>* iter = edges->StartIteration();
+	while (Edge* e = iter->GetNext()) {
+		computeContractionAndError(e);
+	}
+	edges->EndIteration(iter);
 
 	while (numTriangles() > target_tri_count)
-		CollapseShortestEdge();
+	{
+		//CollapseShortestEdge();
+		CollapseQEM();
+	}
 }
 
 void Mesh::Save() const
@@ -595,7 +721,7 @@ void Mesh::Save() const
 		for (int i = 0; i < count; i++) {
 
 			//set new index (starts at 1)
-			vertices->operator[](i)->setIndex(i + 1);
+			vertices->operator[](i)->setNewFileIndex(i + 1);
 
 			myfile << "v "
 				+ std::to_string(vertices->operator[](i)->x()) + ' '
@@ -609,9 +735,9 @@ void Mesh::Save() const
 		Iterator<Triangle*>* iterT = triangles->StartIteration();
 		while (Triangle* t = iterT->GetNext()) {
 			myfile << "f "
-				+ std::to_string(t->operator[](0)->getIndex()) + ' '
-				+ std::to_string(t->operator[](1)->getIndex()) + ' '
-				+ std::to_string(t->operator[](2)->getIndex()) + '\n';
+				+ std::to_string(t->operator[](0)->getNewFileIndex()) + ' '
+				+ std::to_string(t->operator[](1)->getNewFileIndex()) + ' '
+				+ std::to_string(t->operator[](2)->getNewFileIndex()) + '\n';
 		}
 		triangles->EndIteration(iterT);
 
@@ -628,15 +754,15 @@ void Mesh::InitQuadricErrorMetric(Triangle* const t)
 	Vec3f n = ComputeNormal(t->operator[](0)->getPosition(), t->operator[](1)->getPosition(), t->operator[](2)->getPosition());
 	float d = n.Dot3(t->operator[](0)->getPosition()); //fill in arbitrary point;
 
-	// a² ab ac ad
-	// ab b² bc bd
-	// ac bc c² cd
-	// ad bd cd d²
+	// a^2 ab ac ad
+	// ab b^2 bc bd
+	// ac bc c^2 cd
+	// ad bd cd d^2
 	float K[4][4] = {
-		{std::pow(n.x(),2), n.x()*n.y(), n.x()*n.z(), n.x()*d},
-		{n.x()*n.y(), std::pow(n.y(),2), n.y()*n.z(), n.y()*d},
-		{n.x()*n.z(), n.y()*n.z(), std::pow(n.z(),2), n.z()*d},
-		{n.x()*d, n.y()*d, n.z()*d, std::pow(d,2)}
+		{std::pow(n.x(),2), n.x() * n.y(), n.x() * n.z(), n.x() * d},
+		{n.x() * n.y(), std::pow(n.y(),2), n.y() * n.z(), n.y() * d},
+		{n.x() * n.z(), n.y() * n.z(), std::pow(n.z(),2), n.z() * d},
+		{n.x() * d, n.y() * d, n.z() * d, std::pow(d,2)}
 	};
 
 	//set Q for all vertices
@@ -651,6 +777,72 @@ void Mesh::InitQuadricErrorMetric(Triangle* const t)
 	}
 }
 
+//based on Garland&Heckbert
+void Mesh::computeContractionAndError(Edge* const e)
+{
+	Vertex* v1 = e->operator[](0);
+	Vertex* v2 = e->operator[](1);
+
+	//compute optimal contraction target v_
+	//Matrix Q1(v1->getQ());
+	//Matrix Q2(v2->getQ());
+	//Matrix Q_ = Q1 + Q2;
+	Matrix* Q1 = v1->getQ();
+	Matrix* Q2 = v2->getQ();
+	Matrix Q_ = (*Q1) + (*Q2);
+
+
+
+	//new
+	Matrix Q_inv(Q_);
+
+	//set last row to 0,0,0,1
+	Q_inv.Set(3, 0, 0);
+	Q_inv.Set(3, 1, 0);
+	Q_inv.Set(3, 2, 0);
+	Q_inv.Set(3, 3, 1);
+
+	Q_inv.Inverse();
+
+	//Q_.Inverse();
+
+	//make a matrix [0 0 0 1]^T
+	Vec4f v_2(0, 0, 0, 1);
+
+	//new
+	//Matrix columnMatrix;
+	//
+	//
+	//columnMatrix.Set(0, 0, 0);
+	//columnMatrix.Set(1, 0, 0);
+	//columnMatrix.Set(2, 0, 0);
+	//columnMatrix.Set(3, 0, 1);
+
+	//compute error (cost)
+
+	//Matrix v_ = Q_ * columnMatrix;
+	
+	//new
+	Q_inv.Transform(v_2);
+	v_2.Negate();
+	Vec4f v_2_copy(v_2);
+	Q_.Transform(v_2_copy);
+	float error = v_2.Dot3(v_2_copy);
+
+	//Matrix v_T = v_;
+	//v_T.Transpose();
+
+	//Matrix error = v_T * Q_ * v_;
+
+	//set the error in the edge
+	//e->setError(error.Get(0,0));
+	e->setError(error);
+
+	//set the v_ on the edge
+	//Matrix* v__ = &v_;
+	e->setV_(v_2);
+}
+
 void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h)
 {
 	if (vertexSelectionMode == 0)
@@ -660,21 +852,21 @@ void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int 
 	// Step 1: Zero center in 2D: x - w/2. Similarly for y.
 	// Step 2: Negate: -(x - w/2) as in 2D x points to the right, but in 3D x point to the left (in 3D y points up, z forward, hence x left). Same for y.
 	// Step 3: Convert from pixels to world units. Let f be the focal length (distance to the camera plane; canonically this would be 1, but it does not matter). 
-	// Assuming a (canonical) horizontal field of view of 90°, the point (0, h/2), now transformed to (w/2, 0) should correspond to (1, 0, 1) in 3D 
+	// Assuming a (canonical) horizontal field of view of 90ï¿½, the point (0, h/2), now transformed to (w/2, 0) should correspond to (1, 0, 1) in 3D 
 	//  (since (f, 0, f), (0, 0, 0) and (-f, 0, f) form an isosceles triangle with right angle at (0, 0, 0)). Thus converting from pixels to world units is done 
 	//	by multiplying by 2f/w. We then end up at (-(x - w/2)*2f/w, -(y - h/2)*2f/w, f) as transformed version of (x, y).
 	// Step 4: On this line we also have (by scaling) (-(x - w/2)*2/w, -(y - h/2)*2/w, 1).
 	// Step 4': However, after testing and working out an example, it turns out we need to put the z-coordinate here to 12/5 = 2.4 for some reason.
 	// Step 5: Transform to world coordinates using the camera matrix.
 
-	Vec3f line_dir(-(x - w/2.)*2./w, -(y - h/2.)*2./w, 2.4); // Direction vector of line between camera center (0, 0, 0) and clicked (2D) point - camera coordinates
-	
+	Vec3f line_dir(-(x - w / 2.) * 2. / w, -(y - h / 2.) * 2. / w, 2.4); // Direction vector of line between camera center (0, 0, 0) and clicked (2D) point - camera coordinates
+
 	Vec3f look = cam_direction;
 	Vec3f up = cam_up - look * cam_up.Dot3(look); // up-direction of the camera, but orthogonal to the view direction
 	up.Normalize();
 	Vec3f hor;
 	Vec3f::Cross3(hor, up, look);
-	
+
 	Matrix transf; // from the camera system to world coordinates (i.e. maps (0, 0, 0, 1) to (cam_center, 1), and (1, 0, 0, 0) to (cam_horizontal, 0) etc.)
 	transf.Set(0, 0, hor.x()); transf.Set(0, 1, up.x()); transf.Set(0, 2, look.x()); transf.Set(0, 3, cam_center.x());
 	transf.Set(1, 0, hor.y()); transf.Set(1, 1, up.y()); transf.Set(1, 2, look.y()); transf.Set(1, 3, cam_center.y());
