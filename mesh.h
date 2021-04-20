@@ -79,8 +79,6 @@ public:
 	void selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h);
 	void removeSelectedVertices();
 
-	void InitQuadricErrorMetric(Triangle* const);
-
 private:
 	// ==============
 	// REPRESENTATION

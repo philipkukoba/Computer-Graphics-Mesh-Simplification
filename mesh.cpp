@@ -134,7 +134,7 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	triangles->Add(t);
 
 	//init QEM
-	//InitQuadricErrorMetric(t);
+	InitQuadricErrorMetric(t);
 }
 
 void Mesh::removeTriangle(Triangle* t) {
@@ -696,8 +696,8 @@ void Mesh::Simplification(int target_tri_count) {
 
 	while (numTriangles() > target_tri_count)
 	{
-		//CollapseShortestEdge();
-		CollapseQEM();
+		CollapseShortestEdge();
+		//CollapseQEM();
 	}
 }
 
