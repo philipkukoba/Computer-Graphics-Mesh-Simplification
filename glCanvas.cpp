@@ -157,7 +157,7 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 		break;
 	case 'g': case 'G':
 		args->gouraud = !args->gouraud;
-		GouraudShading();
+		mesh->gouraud = !mesh->gouraud;
 		Render();
 		break;
 	case 's': case 'S':

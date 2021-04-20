@@ -9,6 +9,7 @@
 #include "argparser.h"
 #include <queue>
 #include "matrix.h"
+#include <vector>
 
 class Vertex;
 class Triangle;
@@ -79,6 +80,8 @@ public:
 	void selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h);
 	void removeSelectedVertices();
 
+	bool gouraud = false;
+
 private:
 	// ==============
 	// REPRESENTATION
@@ -87,6 +90,8 @@ private:
 	Bag<Triangle*>* triangles;
 	BoundingBox* bbox;
 	Bag<VertexParent*>* vertex_parents;
+
+	int maxVertexIndex;
 
 	const char* input_file;
 

@@ -29,6 +29,7 @@
 // =======================================================================
 
 Mesh::Mesh() : input_file(NULL) {
+	maxVertexIndex = -1;
 	vertices = new Array<Vertex*>(INITIAL_VERTEX);
 	edges = new Bag<Edge*>(INITIAL_EDGE, Edge::extract_func);
 	triangles = new Bag<Triangle*>(INITIAL_TRIANGLE, Triangle::extract_func);
@@ -280,6 +281,7 @@ void Mesh::Load(const char* input_file) {
 			printf("LINE: '%s'", line);
 		}
 	}
+	maxVertexIndex = vert_count;
 }
 
 // =======================================================================
@@ -304,6 +306,22 @@ void InsertNormal(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3) {
 
 void Mesh::Paint(ArgParser* args) {
 
+	// Calculate vertex normals for Gouraud shading
+	Vec3f* vertexNormalsMean = new Vec3f[maxVertexIndex + 1]; // Will store the mean of triangle normals for all triangles containing vertex i; ( Vec3f s created using default constructor: (0, 0, 0) )
+	int* vertexNbTriangles = new int[maxVertexIndex + 1](); // In how many triangles does vertex i lie (so far)? (initialised at 0)
+	Iterator<Triangle*>* iter = triangles->StartIteration();
+	while (Triangle* t = iter->GetNext()) {
+		Vec3f tNormal = ComputeNormal((*t)[0]->get(), (*t)[1]->get(), (*t)[2]->get());
+		for (int i = 0; i < 3; i++)
+		{
+			Vertex* v = (*t)[i];
+			int vIndex = v->getIndex();
+			vertexNormalsMean[vIndex] = vertexNbTriangles[vIndex] / float(vertexNbTriangles[vIndex] + 1) * vertexNormalsMean[vIndex] + 1 / float(vertexNbTriangles[vIndex] + 1) * tNormal;
+			vertexNbTriangles[vIndex]++;
+		}
+	}
+	triangles->EndIteration(iter);
+
 	// scale it so it fits in the window
 	Vec3f center; bbox->getCenter(center);
 	float s = 1 / bbox->maxDim();
@@ -317,19 +335,37 @@ void Mesh::Paint(ArgParser* args) {
 
 	// draw the triangles
 	glColor3f(1, 1, 1);
-	Iterator<Triangle*>* iter = triangles->StartIteration();
+	iter = triangles->StartIteration();
 	glBegin(GL_TRIANGLES);
 	while (Triangle* t = iter->GetNext()) {
-		Vec3f a = (*t)[0]->get();
-		Vec3f b = (*t)[1]->get();
-		Vec3f c = (*t)[2]->get();
-		InsertNormal(a, b, c);
-		glVertex3f(a.x(), a.y(), a.z());
-		glVertex3f(b.x(), b.y(), b.z());
-		glVertex3f(c.x(), c.y(), c.z());
+		if (!gouraud)
+		{
+			Vec3f a = (*t)[0]->get();
+			Vec3f b = (*t)[1]->get();
+			Vec3f c = (*t)[2]->get();
+			InsertNormal(a, b, c);
+			glVertex3f(a.x(), a.y(), a.z());
+			glVertex3f(b.x(), b.y(), b.z());
+			glVertex3f(c.x(), c.y(), c.z());
+		}
+		else
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				Vertex* v = (*t)[i];
+				int vIndex = v->getIndex();
+				Vec3f vNormal = vertexNormalsMean[vIndex];
+
+				glNormal3f(vNormal.x(), vNormal.y(), vNormal.z());
+				glVertex3f(v->x(), v->y(), v->z());
+			}
+		}
 	}
 	triangles->EndIteration(iter);
 	glEnd();
+
+	delete[] vertexNormalsMean;
+	delete[] vertexNbTriangles;
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
@@ -856,7 +892,7 @@ void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int 
 	//  (since (f, 0, f), (0, 0, 0) and (-f, 0, f) form an isosceles triangle with right angle at (0, 0, 0)). Thus converting from pixels to world units is done 
 	//	by multiplying by 2f/w. We then end up at (-(x - w/2)*2f/w, -(y - h/2)*2f/w, f) as transformed version of (x, y).
 	// Step 4: On this line we also have (by scaling) (-(x - w/2)*2/w, -(y - h/2)*2/w, 1).
-	// Step 4': However, after testing and working out an example, it turns out we need to put the z-coordinate here to 12/5 = 2.4 for some reason.
+	// Step 4': However, after testing and working out an example, it turns out we need to put the z-coordinate here to 12/5 = 2.4 for some reason. BUT this only works for cube.obj...
 	// Step 5: Transform to world coordinates using the camera matrix.
 
 	Vec3f line_dir(-(x - w / 2.) * 2. / w, -(y - h / 2.) * 2. / w, 2.4); // Direction vector of line between camera center (0, 0, 0) and clicked (2D) point - camera coordinates
