@@ -125,6 +125,8 @@ void GLCanvas::motion(int x, int y) {
 		camera->rotateCamera(0.005 * (mouseX - x), 0.005 * (mouseY - y));
 		mouseX = x;
 		mouseY = y;
+
+		glutPostRedisplay();
 	}
 	// Middle button = translation
 	// (move camera perpendicular to the direction vector)
@@ -132,6 +134,11 @@ void GLCanvas::motion(int x, int y) {
 		camera->truckCamera((mouseX - x) * 0.05, (y - mouseY) * 0.05);
 		mouseX = x;
 		mouseY = y;
+
+		if (mesh->ProgressiveMeshing(camera->center))
+			Render(); // (includes glutPostRedisplay)
+		else
+			glutPostRedisplay();
 	}
 	// Right button = zoom
 	// (move camera along the direction vector)
@@ -139,10 +146,14 @@ void GLCanvas::motion(int x, int y) {
 		camera->dollyCamera((x - mouseX) * 0.05);
 		mouseX = x;
 		mouseY = y;
+
+		if (mesh->ProgressiveMeshing(camera->center))
+			Render(); // (includes glutPostRedisplay)
+		else
+			glutPostRedisplay();
 	}
 
 	// Redraw the scene with the new camera parameters
-	glutPostRedisplay();
 }
 
 // ========================================================
@@ -182,22 +193,11 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 		exit(0); //quit
 		break;
 	case 'p': case 'P':
-		ProgressiveMeshing();
+		mesh->progressiveMeshing = !mesh->progressiveMeshing;
+		break;
 	default:
 		printf("UNKNOWN KEYBOARD INPUT  '%c'\n", key);
 	}
-}
-
-void GLCanvas::ProgressiveMeshing() {
-	std::cout << "progressive meshing has not been implemented yet" << std::endl;
-	//TODO
-}
-
-void GLCanvas::GouraudShading()
-{
-	/*shader = SM.loadfromFile("GouraudShading_vshader.txt", "GouraudShading_fshader.txt");
-	ProgramObject = shader->GetProgramObject();
-	shader->begin();*/
 }
 
 // ========================================================
@@ -252,6 +252,8 @@ void GLCanvas::initialize(ArgParser* _args, Mesh* _mesh) {
 	glutKeyboardFunc(keyboard);
 
 	Render();
+
+	mesh->SetLodLevel0Distance(camera->center);
 
 	// Enter the main rendering loop
 	glutMainLoop();

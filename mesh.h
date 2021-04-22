@@ -10,6 +10,7 @@
 #include <queue>
 #include "matrix.h"
 #include <vector>
+#include "my_priority_queue.h"
 
 class Vertex;
 class Triangle;
@@ -23,6 +24,7 @@ public:
 	// CONSTRUCTOR & DESTRUCTOR
 	Mesh();
 	virtual ~Mesh();
+	void Load(const char* input_file, bool set_input_file);
 	void Load(const char* input_file);
 
 	// ========
@@ -60,6 +62,8 @@ public:
 
 	// ===============
 	// OTHER FUNCTIONS
+	void Clear();
+
 	void Paint(ArgParser* args);
 	void LoopSubdivision();
 	void CollapseEdge(Edge* e, float, float, float); // General collapse point, collapses all instances of AB (second level base method)
@@ -71,16 +75,25 @@ public:
 	void CollapseShortestEdge();
 	void CollapseQEM();
 	void Simplification(int target_tri_count);
+	
+	void Save(std::string) const;
 	void Save() const;
+
+	bool LodLevelSaved(int, string&) const;
+	bool ProgressiveMeshing(Vec3f); // Returns whether we have changed the mesh (hence need to redraw)
 
 	// Quadric error metric helper functions
 	void InitQuadricErrorMetric(Triangle* const t);
 	void computeContractionAndError(Edge* const e);
+
 	int vertexSelectionMode = 0; // 0: not selecting, 1: select point 1, 2: select point 2
 	void selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h);
 	void removeSelectedVertices();
 
 	bool gouraud = false;
+	bool progressiveMeshing = false;
+
+	void SetLodLevel0Distance(Vec3f);
 
 private:
 	// ==============
@@ -109,14 +122,16 @@ private:
 		}
 	};
 
-	priority_queue <Edge*, vector<Edge*>, EdgeComparer>* edgesShortestFirst;
-	priority_queue <Edge*, vector<Edge*>, EdgeComparerQEM>* edgesQEM;
-	//std::vector<Edge*> edgesShortestFirst;
+	my_priority_queue <Edge*, vector<Edge*>, EdgeComparer>* edgesShortestFirst;
+	my_priority_queue <Edge*, vector<Edge*>, EdgeComparerQEM>* edgesQEM;
 
 	std::vector < std::vector<Edge*>> connectedEdges;
 
 	Vertex* selectedPoint1 = NULL;
 	Vertex* selectedPoint2 = NULL;
+
+	int lodLevel = 0;
+	float lodLevel0Distance = -1.; // not set yet
 };
 
 #endif

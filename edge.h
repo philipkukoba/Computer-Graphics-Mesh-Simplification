@@ -5,8 +5,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include "vertex.h"
 
-class Vertex;
+
 class Triangle;
 class Matrix;
 
@@ -24,7 +25,10 @@ public:
 	// =========
 	// ACCESSORS
 	Vertex* getVertex() const { assert(vertex != NULL); return vertex; }
-	Edge* getNext() const { assert(next != NULL); return next; }
+	Edge* getNext() const { 
+		assert(next != NULL);
+		return next; 
+	}
 	Triangle* getTriangle() const { assert(triangle != NULL); return triangle; }
 	Edge* getOpposite() const {
 		// warning!  the opposite edge might be NULL!
@@ -47,35 +51,37 @@ public:
 		assert(e->opposite == NULL);
 		opposite = e;
 		e->opposite = this;
-		calculateLengthAndIndex();
 	}
 	void clearOpposite() {
 		if (opposite == NULL) return;
 		assert(opposite->opposite == this);
 		opposite->opposite = NULL;
 		opposite = NULL;
-		//calculateLengthAndIndex();
 	}
 	void setNext(Edge* e) {
 		assert(next == NULL);
 		assert(e != NULL);
 		assert(triangle == e->triangle);
 		next = e;
+		length = NULL;
 	}
 	void setCrease(float c) { crease = c; }
 
 	//fields
 	float getLength() {
-		if (length == NULL) {
-			this->calculateLengthAndIndex();
-		}
-		return length;  
+		if (length == NULL)
+			length = ((*this)[0]->get() - (*this)[1]->get()).Length();
+		return length;
 	}
-	int getIndexA() const { return indexA; }
-	int getIndexB() const { return indexB; }
+	int getIndexA() const { 
+		return (*this)[1]->getIndex(); 
+	}
+	int getIndexB() const { 
+		return (*this)[0]->getIndex(); 
+	}
 
 	//define operator so we can store edges in sorted data structures
-	bool operator<(const Edge& e) { return length < e.length; }
+	bool operator<(Edge& e) { return getLength() < e.getLength(); }
 
 	float getError() const { return error; }
 	void setError(float e) { this->error = e; }

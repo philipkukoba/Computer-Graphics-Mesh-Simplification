@@ -35,8 +35,8 @@ Mesh::Mesh() : input_file(NULL) {
 	triangles = new Bag<Triangle*>(INITIAL_TRIANGLE, Triangle::extract_func);
 	vertex_parents = new Bag<VertexParent*>(INITIAL_VERTEX, VertexParent::extract_func);
 
-	edgesShortestFirst = new priority_queue<Edge*, std::vector<Edge*>, EdgeComparer>();
-	edgesQEM = new priority_queue<Edge*, std::vector<Edge*>, EdgeComparerQEM>();
+	edgesShortestFirst = new my_priority_queue<Edge*, std::vector<Edge*>, EdgeComparer>();
+	edgesQEM = new my_priority_queue<Edge*, std::vector<Edge*>, EdgeComparerQEM>();
 	//edgesShortestFirst = std::vector<Edge*>();
 
 	bbox = NULL;
@@ -97,42 +97,50 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	connectedEdges[c->getIndex()].push_back(ec);
 
 	// connect up with opposite edges (if they exist)
-	Edge* ea_op = getEdge((*ea)[1], (*ea)[0]);
-	Edge* eb_op = getEdge((*eb)[1], (*eb)[0]);
-	Edge* ec_op = getEdge((*ec)[1], (*ec)[0]);
-	if (ea_op != NULL) {
-		ea_op->setOpposite(ea);
+	if (ea->getOpposite() == NULL)
+	{
+		Edge* ea_op = getEdge((*ea)[1], (*ea)[0]);
+		if (ea_op != NULL && ea_op->getOpposite() == NULL) {
+			ea_op->setOpposite(ea);
 
-		edgesShortestFirst->push(ea_op);
-		//edgesShortestFirst.push_back(ea_op);
-		edgesQEM->push(ea_op);
+			edgesQEM->push(ea_op);
 
-		connectedEdges[(*ea)[0]->getIndex()].push_back(ea_op);
-		connectedEdges[(*ea)[1]->getIndex()].push_back(ea_op);
+			connectedEdges[(*ea)[0]->getIndex()].push_back(ea_op);
+			connectedEdges[(*ea)[1]->getIndex()].push_back(ea_op);
+		}
 	}
-	if (eb_op != NULL) {
-		eb_op->setOpposite(eb);
+	if (eb->getOpposite() == NULL)
+	{
+		Edge* eb_op = getEdge((*eb)[1], (*eb)[0]);
+		if (eb_op != NULL && eb_op->getOpposite() == NULL) {
+			eb_op->setOpposite(eb);
 
-		edgesShortestFirst->push(eb_op);
-		//edgesShortestFirst.push_back(eb_op);
-		edgesQEM->push(eb_op);
+			edgesQEM->push(eb_op);
 
-		connectedEdges[(*eb)[0]->getIndex()].push_back(eb_op);
-		connectedEdges[(*eb)[1]->getIndex()].push_back(eb_op);
+			connectedEdges[(*eb)[0]->getIndex()].push_back(eb_op);
+			connectedEdges[(*eb)[1]->getIndex()].push_back(eb_op);
+		}
 	}
-	if (ec_op != NULL) {
-		ec_op->setOpposite(ec);
+	if (ec->getOpposite() == NULL)
+	{
+		Edge* ec_op = getEdge((*ec)[1], (*ec)[0]);
+		if (ec_op != NULL && ec_op->getOpposite() == NULL) {
+			ec_op->setOpposite(ec);
 
-		edgesShortestFirst->push(ec_op);
-		//edgesShortestFirst.push_back(ec_op);
-		edgesQEM->push(ec_op);
+			edgesQEM->push(ec_op);
 
-		connectedEdges[(*ec)[0]->getIndex()].push_back(ec_op);
-		connectedEdges[(*ec)[1]->getIndex()].push_back(ec_op);
+			connectedEdges[(*ec)[0]->getIndex()].push_back(ec_op);
+			connectedEdges[(*ec)[1]->getIndex()].push_back(ec_op);
+		}
 	}
 
 	// add the triangle to the master list
 	triangles->Add(t);
+
+	edgesShortestFirst->push(ea);
+	edgesShortestFirst->push(eb);
+	edgesShortestFirst->push(ec);
+
 
 	//init QEM
 	InitQuadricErrorMetric(t);
@@ -174,20 +182,55 @@ void Mesh::setParentsChild(Vertex* p1, Vertex* p2, Vertex* child) {
 	vertex_parents->Add(new VertexParent(p1, p2, child));
 }
 
+void Mesh::Clear()
+{
+	vertices->DeleteAllElements();
+	vertices->Clear();
+
+	Iterator<Edge*>* ite = edges->StartIteration();
+	while (Edge* e = ite->GetNext())
+		delete e;
+	edges->EndIteration(ite);
+	edges->Clear();
+	
+	Iterator<Triangle*>* itt = triangles->StartIteration();
+	while (Triangle* t = itt->GetNext())
+		delete t;
+	triangles->EndIteration(itt);
+	triangles->Clear();
+
+
+	Iterator<VertexParent*>* itvp = vertex_parents->StartIteration();
+	while (VertexParent* vp = itvp->GetNext())
+		delete vp;
+	vertex_parents->EndIteration(itvp);
+	vertex_parents->Clear();
+
+	delete edgesShortestFirst; // No clear method
+	edgesShortestFirst = new my_priority_queue<Edge*, std::vector<Edge*>, EdgeComparer>();
+	delete edgesQEM;
+	edgesQEM = new my_priority_queue<Edge*, std::vector<Edge*>, EdgeComparerQEM>();
+
+	bbox = NULL;
+}
+
 // =======================================================================
 // the load function parses very simple .obj files
 // the basic format has been extended to allow the specification 
 // of crease weights on the edges.
 // =======================================================================
 
-void Mesh::Load(const char* input_file) {
+void Mesh::Load(const char* input_file, bool initial_load) {
+
+	Clear();
 
 	FILE* objfile = fopen(input_file, "r");
 	if (objfile == NULL) {
 		printf("ERROR! CANNOT OPEN '%s'\n", input_file);
 		return;
 	}
-	this->input_file = input_file;
+	if (initial_load)
+		this->input_file = input_file;
 
 	char line[200];
 	char token[100];
@@ -281,9 +324,15 @@ void Mesh::Load(const char* input_file) {
 			printf("LINE: '%s'", line);
 		}
 	}
+	
 	maxVertexIndex = vert_count;
+
+	fclose(objfile);
 }
 
+void Mesh::Load(const char* input_file) {
+	Load(input_file, true);
+}
 // =======================================================================
 // PAINT
 // =======================================================================
@@ -470,6 +519,12 @@ void Mesh::CollapseOneEdge_EndPoint(Edge* e) {
 	triangles->Remove(ABC);
 	triangles->Remove(ADB);
 
+	edgesShortestFirst->remove(AB);
+	edgesShortestFirst->remove(BC);
+	edgesShortestFirst->remove(CA);
+	edgesShortestFirst->remove(AD);
+	edgesShortestFirst->remove(DB);
+	edgesShortestFirst->remove(BA);
 
 	// We'll now cycle through all other triangles containing A.
 	bool cycleCompleted = false;
@@ -510,8 +565,17 @@ void Mesh::CollapseOneEdge_EndPoint(Edge* e) {
 		{
 			// Special case if the previous triangle is deleted (hence there is no lastBP): when we are now in APD.
 			Edge* BD = DB->getOpposite();
-			BD->clearOpposite();
-			newQB->setOpposite(BD);
+			if (BD != NULL)
+			{
+				BD->clearOpposite();
+				newQB->setOpposite(BD);
+			}
+			else
+			{
+				// Apparently we need to set DB's opposite. As we also need to set newQB's opposite, let's use them together
+				newQB->setOpposite(DB);
+				cout << "During edge collapse 'fixed' two unexpected missing opposites by setting the opposites to each other." << endl;
+			}
 		}
 		else
 		{
@@ -525,13 +589,17 @@ void Mesh::CollapseOneEdge_EndPoint(Edge* e) {
 		edges->Remove(QA);
 		triangles->Remove(APQ);
 
+		edgesShortestFirst->remove(AP);
+		edgesShortestFirst->remove(PQ);
+		edgesShortestFirst->remove(QA);
+
 		edges->Add(newBP);
 		edges->Add(newPQ);
 		edges->Add(newQB);
 
-		/*edgesShortestFirst->push(newBP);
+		edgesShortestFirst->push(newBP);
 		edgesShortestFirst->push(newPQ);
-		edgesShortestFirst->push(newQB);*/
+		edgesShortestFirst->push(newQB);
 
 
 		triangles->Add(newBPQ);
@@ -632,7 +700,7 @@ void Mesh::CollapseShortestEdge() {
 
 	//controleer of de edge niet al verwijderd is in de bag
 	//of als de edge geen opposite heeft
-	while (e->getOpposite() == NULL ||
+	while (e == NULL || e->getOpposite() == NULL || e->getNext() == NULL ||
 		e->getIndexA() == e->getIndexB() ||
 		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
 	{
@@ -737,18 +805,9 @@ void Mesh::Simplification(int target_tri_count) {
 	}
 }
 
-void Mesh::Save() const
+void Mesh::Save(string filename) const
 {
-	int triangle_count = triangles->Count();
-	std::string str(input_file); // c string to c++ string
-	std::string filename = std::regex_replace(str, std::regex(".obj"), std::string(""))
-		+ "_simplified_to_"
-		+ std::to_string(triangle_count)
-		+ ".obj";
-
 	ofstream myfile(filename);
-
-
 	if (myfile.is_open())
 	{
 		//write all vertices
@@ -779,7 +838,18 @@ void Mesh::Save() const
 
 		myfile.close();
 	}
-	else throw "Unable to save mesh because failed to open a new file.";
+	else throw exception("Unable to save mesh because failed to open a new file.");
+}
+
+void Mesh::Save() const
+{
+	int triangle_count = triangles->Count();
+	std::string str(input_file); // c string to c++ string
+	std::string filename = std::regex_replace(str, std::regex(".obj"), std::string(""))
+		+ "_simplified_to_"
+		+ std::to_string(triangle_count)
+		+ ".obj";
+	Save(filename);
 }
 
 void Mesh::InitQuadricErrorMetric(Triangle* const t)
@@ -965,6 +1035,71 @@ void Mesh::removeSelectedVertices()
 		cout << "The two selected vertices must form an edge!" << endl;
 	else
 		Mesh::CollapseEdge(e);
+}
+
+void Mesh::SetLodLevel0Distance(Vec3f cam_center)
+{
+	Vec3f obj_center;
+	bbox->getCenter(obj_center);
+	lodLevel0Distance = (cam_center - obj_center).Length();
+}
+
+bool Mesh::ProgressiveMeshing(Vec3f cam_center)
+{
+	if (!progressiveMeshing)
+		return false;
+
+	Vec3f obj_center;
+	bbox->getCenter(obj_center);
+	float distance = (cam_center - obj_center).Length();
+	
+	int oldLodLevel = lodLevel;
+	lodLevel = 0.25 * (distance - lodLevel0Distance) / bbox->maxDim(); // Constant depends on scene (here for bunny) (and thus probably differently on bbox->maxDim()). Presumably same issue of scaling as in vertex selection.
+	if (lodLevel == oldLodLevel)
+		return false;
+
+	if (lodLevel < 0)
+		lodLevel = 0;
+	if (lodLevel > 10)
+		lodLevel = 10;
+
+	string fileName;
+	if (LodLevelSaved(lodLevel, fileName))
+		// file exists (and can be opened): load it
+		Load(fileName.c_str(), false);
+	else
+	{
+		// Need to generate this level of detail: do this by decimating from the first more detailed mesh available
+		int baseLodLevel = lodLevel - 1;
+		string baseLodFileName;
+		while (baseLodLevel > 0 && !LodLevelSaved(baseLodLevel, baseLodFileName))
+			baseLodLevel--;
+		if (baseLodLevel == 0)
+			baseLodFileName = string(input_file);
+		else
+			if (baseLodLevel != oldLodLevel) // No point in loading if it already is the current mesh
+				Load(baseLodFileName.c_str(), false);
+
+		string IntermediateLodFileName;
+		for (int i = baseLodLevel; i < lodLevel; i++)
+		{
+			Simplification(0.9 * triangles->Count());
+			if (!LodLevelSaved(i, IntermediateLodFileName))
+				Save(IntermediateLodFileName);
+		}
+		Save(fileName);
+	}
+	return true;
+}
+
+bool Mesh::LodLevelSaved(int _lodLevel, string& fileName) const // fileName is output argument
+{
+	string baseFileName = string(input_file);
+	string baseFileNameNoExt = baseFileName.substr(0, baseFileName.length() - 4);  // no .obj
+	string fileNameNoExt = baseFileNameNoExt + "__lod" + to_string(_lodLevel);
+	fileName = fileNameNoExt + ".obj";
+	std::ifstream infile(fileName);
+	return infile.good();
 }
 
 // =================================================================

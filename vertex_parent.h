@@ -26,7 +26,7 @@ public:
 		p2 = _p2;
 		v = _v;
 	}
-	~VertexParent();
+	~VertexParent() {};
 
 	// to be put in a bag...
 	static void extract_func(VertexParent* e, int& a, int& b, int& c) {

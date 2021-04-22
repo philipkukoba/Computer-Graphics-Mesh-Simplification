@@ -142,7 +142,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-	<ClInclude Include="..\glsl.h" />
     <ClInclude Include="..\argparser.h" />
     <ClInclude Include="..\array.h" />
     <ClInclude Include="..\bag.h" />
@@ -152,6 +151,7 @@
     <ClInclude Include="..\glCanvas.h" />
     <ClInclude Include="..\matrix.h" />
     <ClInclude Include="..\mesh.h" />
+    <ClInclude Include="..\my_priority_queue.h" />
     <ClInclude Include="..\triangle.h" />
     <ClInclude Include="..\utils.h" />
     <ClInclude Include="..\vectors.h" />
@@ -159,7 +159,6 @@
     <ClInclude Include="..\vertex_parent.h" />
   </ItemGroup>
   <ItemGroup>
-	<ClInclude Include="..\glsl.cpp" />
     <ClCompile Include="..\boundingbox.cpp" />
     <ClCompile Include="..\camera.cpp" />
     <ClCompile Include="..\edge.cpp" />

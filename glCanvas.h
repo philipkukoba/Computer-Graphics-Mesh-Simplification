@@ -11,7 +11,6 @@
 #include "argparser.h"
 #include "camera.h"
 #include "mesh.h"
-#include "glsl.h"
 #include <chrono>
 
 class GLCanvas {
@@ -27,13 +26,6 @@ private:
 	static void mouse(int button, int state, int x, int y);
 	static void motion(int x, int y);
 	static void keyboard(unsigned char key, int x, int y);
-
-	static void GouraudShading();
-	//glShaderManager SM;
-	//glShader* shader;
-	//GLuint ProgramObject;
-
-	static void ProgressiveMeshing();
 
 	static ArgParser* args;
 	static Camera* camera;
