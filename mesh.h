@@ -86,6 +86,9 @@ public:
 	void InitQuadricErrorMetric(Triangle* const t);
 	void computeContractionAndError(Edge* const e);
 
+	void nextEdgeSelectionMode();
+	void toggleCollapseMidPoint();
+
 	int vertexSelectionMode = 0; // 0: not selecting, 1: select point 1, 2: select point 2
 	void selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h);
 	void removeSelectedVertices();
@@ -132,6 +135,9 @@ private:
 
 	int lodLevel = 0;
 	float lodLevel0Distance = -1.; // not set yet
+
+	int edgeSelectionMode = 1; // 0: random, 1: shortest, 2: QEM (can be overwritten by vertexSelectionMode)
+	bool edgeCollapseToMidPoint = true; // (not applicable for QEM) 
 };
 
 #endif

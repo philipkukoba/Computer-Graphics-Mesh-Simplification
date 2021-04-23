@@ -109,7 +109,7 @@ void GLCanvas::mouse(int button, int state, int x, int y) {
 
 
 	long long currentClickTime = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-	if (mouseButton == GLUT_LEFT_BUTTON && mesh->vertexSelectionMode != 0 && currentClickTime - lastClickTime> 100) // avoid double counting of clicks
+	if (mouseButton == GLUT_LEFT_BUTTON && mesh->vertexSelectionMode != 0 && currentClickTime - lastClickTime > 250) // avoid double counting of clicks
 		mesh->selectPoint(camera->center, camera->direction, camera->up, x, y, width, height);
 	lastClickTime = currentClickTime;
 }
@@ -172,8 +172,6 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 		Render();
 		break;
 	case 's': case 'S':
-		//mesh->LoopSubdivision();
-		//Render();
 		mesh->Save();
 		printf("The mesh has been saved\n");
 		break;
@@ -194,6 +192,12 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 		break;
 	case 'p': case 'P':
 		mesh->progressiveMeshing = !mesh->progressiveMeshing;
+		break;
+	case 'm': case 'M':
+		mesh->nextEdgeSelectionMode();
+		break;
+	case 'l': case 'L':
+		mesh->toggleCollapseMidPoint();
 		break;
 	default:
 		printf("UNKNOWN KEYBOARD INPUT  '%c'\n", key);

@@ -679,8 +679,10 @@ void Mesh::CollapseEdge_MidPoint(Edge* e)
 
 void Mesh::CollapseEdge(Edge* e)
 {
-	// Default
-	return CollapseEdge_MidPoint(e);
+	if (edgeCollapseToMidPoint)
+		return CollapseEdge_MidPoint(e);
+	else
+		return CollapseEdge_EndPoint(e);
 }
 
 void Mesh::CollapseRandomEdge() {
@@ -791,17 +793,27 @@ void Mesh::Simplification(int target_tri_count) {
 	//std::make_heap(edgesShortestFirst.begin(), edgesShortestFirst.end(),
 	//	[](Edge* a, Edge* b) { return a->getLength() > a->getLength(); });
 
-	//QEM initialisation
-	Iterator<Edge*>* iter = edges->StartIteration();
-	while (Edge* e = iter->GetNext()) {
-		computeContractionAndError(e);
+	if (edgeSelectionMode == 1)
+	{
+		Iterator<Edge*>* iter = edges->StartIteration();
+		while (Edge* e = iter->GetNext()) {
+			computeContractionAndError(e);
+		}
+		edges->EndIteration(iter);
 	}
-	edges->EndIteration(iter);
+	else if (edgeSelectionMode == 2)
+	{
+		// QEM initialisation
+	}
 
 	while (numTriangles() > target_tri_count)
 	{
-		CollapseShortestEdge();
-		//CollapseQEM();
+		if (edgeSelectionMode == 0)
+			CollapseRandomEdge();
+		else if (edgeSelectionMode == 1)
+			CollapseShortestEdge();
+		else if (edgeSelectionMode == 2)
+			CollapseQEM();
 	}
 }
 
@@ -1034,7 +1046,7 @@ void Mesh::removeSelectedVertices()
 	if (e == NULL)
 		cout << "The two selected vertices must form an edge!" << endl;
 	else
-		Mesh::CollapseEdge(e);
+		Mesh::CollapseEdge_EndPoint(e);
 }
 
 void Mesh::SetLodLevel0Distance(Vec3f cam_center)
@@ -1100,6 +1112,38 @@ bool Mesh::LodLevelSaved(int _lodLevel, string& fileName) const // fileName is o
 	fileName = fileNameNoExt + ".obj";
 	std::ifstream infile(fileName);
 	return infile.good();
+}
+
+void Mesh::nextEdgeSelectionMode()
+{
+	edgeSelectionMode++;
+	if (edgeSelectionMode > 2)
+		edgeSelectionMode = 0;
+
+	switch (edgeSelectionMode)
+	{
+	case 0:
+		cout << "Decimation now uses random edges." << endl;
+		break;
+	case 1:
+		cout << "Decimation now uses shortest edges." << endl;
+		break;
+	case 2:
+		cout << "Decimation now uses the quadric error metric." << endl;
+		break;
+	default:
+		cout << "Unknown edge selection mode for decimation." << endl;
+		break;
+	}
+}
+
+void Mesh::toggleCollapseMidPoint()
+{
+	edgeCollapseToMidPoint = !edgeCollapseToMidPoint;
+	if (edgeCollapseToMidPoint)
+		cout << "Edge collapse now works with mid points (unless we are using the quadric error metric)." << endl;
+	else
+		cout << "Edge collapse now works with end points (unless we are using the quadric error metric)." << endl;
 }
 
 // =================================================================
