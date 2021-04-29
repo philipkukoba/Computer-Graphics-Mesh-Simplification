@@ -52,6 +52,7 @@ public:
 
 	int Inverse(Matrix& m, float epsilon = 1e-08) const;
 	int Inverse(float epsilon = 1e-08) { return Inverse(*this, epsilon); }
+	bool isInversable(float epsilon = 1e-08) const;
 
 	// OVERLOADED OPERATORS
 	Matrix& operator=(const Matrix& m);

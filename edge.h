@@ -29,6 +29,7 @@ public:
 		assert(next != NULL);
 		return next; 
 	}
+	bool hasNext() const { return (next != NULL); }
 	Triangle* getTriangle() const { assert(triangle != NULL); return triangle; }
 	Edge* getOpposite() const {
 		// warning!  the opposite edge might be NULL!

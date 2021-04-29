@@ -91,10 +91,13 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	edges->Add(eb);
 	edges->Add(ec);
 
-	// add edges to connectedEdges vector
-	connectedEdges[a->getIndex()].push_back(ea);
-	connectedEdges[b->getIndex()].push_back(eb);
-	connectedEdges[c->getIndex()].push_back(ec);
+	// add edges to connectedEdges vector (legacy)
+	//connectedVertices[a->getIndex()].push_back(ea);
+	//connectedVertices[b->getIndex()].push_back(eb);
+	//connectedVertices[c->getIndex()].push_back(ec);
+
+	//init QEM
+	InitQuadricErrorMetric(a, b, c);
 
 	// connect up with opposite edges (if they exist)
 	if (ea->getOpposite() == NULL)
@@ -103,10 +106,13 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 		if (ea_op != NULL && ea_op->getOpposite() == NULL) {
 			ea_op->setOpposite(ea);
 
+			computeContractionAndError(ea_op);
 			edgesQEM->push(ea_op);
 
-			connectedEdges[(*ea)[0]->getIndex()].push_back(ea_op);
-			connectedEdges[(*ea)[1]->getIndex()].push_back(ea_op);
+			int i1 = (*ea)[0]->getIndex();
+			int i2 = (*ea)[1]->getIndex();
+			connectedVertices[i1].push_back(i2);
+			connectedVertices[i2].push_back(i1);
 		}
 	}
 	if (eb->getOpposite() == NULL)
@@ -115,10 +121,13 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 		if (eb_op != NULL && eb_op->getOpposite() == NULL) {
 			eb_op->setOpposite(eb);
 
+			computeContractionAndError(eb_op);
 			edgesQEM->push(eb_op);
 
-			connectedEdges[(*eb)[0]->getIndex()].push_back(eb_op);
-			connectedEdges[(*eb)[1]->getIndex()].push_back(eb_op);
+			int i1 = (*eb)[0]->getIndex();
+			int i2 = (*eb)[1]->getIndex();
+			connectedVertices[i1].push_back(i2);
+			connectedVertices[i2].push_back(i1);;
 		}
 	}
 	if (ec->getOpposite() == NULL)
@@ -127,10 +136,13 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 		if (ec_op != NULL && ec_op->getOpposite() == NULL) {
 			ec_op->setOpposite(ec);
 
+			computeContractionAndError(ec_op);
 			edgesQEM->push(ec_op);
 
-			connectedEdges[(*ec)[0]->getIndex()].push_back(ec_op);
-			connectedEdges[(*ec)[1]->getIndex()].push_back(ec_op);
+			int i1 = (*ec)[0]->getIndex();
+			int i2 = (*ec)[1]->getIndex();
+			connectedVertices[i1].push_back(i2);
+			connectedVertices[i2].push_back(i1);;
 		}
 	}
 
@@ -140,10 +152,6 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	edgesShortestFirst->push(ea);
 	edgesShortestFirst->push(eb);
 	edgesShortestFirst->push(ec);
-
-
-	//init QEM
-	InitQuadricErrorMetric(t);
 }
 
 void Mesh::removeTriangle(Triangle* t) {
@@ -192,7 +200,7 @@ void Mesh::Clear()
 		delete e;
 	edges->EndIteration(ite);
 	edges->Clear();
-	
+
 	Iterator<Triangle*>* itt = triangles->StartIteration();
 	while (Triangle* t = itt->GetNext())
 		delete t;
@@ -246,13 +254,13 @@ void Mesh::Load(const char* input_file, bool initial_load) {
 	int vert_count = 0;
 	int vert_index = 1;
 
-	//count total amount of vertices
+	//count total amount of vertices (to init connectedVertices)
 	int n = 0;
 	while (fgets(line, 200, objfile)) {
-		if (line[0] == 'v' /* && line[1] == '0' */ ) n++;
+		if (line[0] == 'v' /* && line[1] == '0' */) n++;
 		else break;
 	}
-	connectedEdges = std::vector<std::vector<Edge*>>(n, std::vector<Edge*>());
+	connectedVertices = std::vector<std::vector<int>>(n, std::vector<int>());
 	//close and reopen again
 	fclose(objfile);
 	objfile = fopen(input_file, "r");
@@ -324,7 +332,7 @@ void Mesh::Load(const char* input_file, bool initial_load) {
 			printf("LINE: '%s'", line);
 		}
 	}
-	
+
 	maxVertexIndex = vert_count;
 
 	fclose(objfile);
@@ -741,9 +749,11 @@ void Mesh::CollapseQEM() {
 
 	//controleer of de edge niet al verwijderd is in de bag
 	//of als de edge geen opposite heeft
-	while (e->getOpposite() == NULL ||
-		e->getIndexA() == e->getIndexB() ||
-		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
+	while (e == NULL ||
+			e->getOpposite() == NULL ||
+			!(e->hasNext()) ||
+			/*e->getIndexA() == e->getIndexB() ||*/
+			edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
 	{
 		edgesQEM->pop();
 		e = edgesQEM->top();
@@ -782,18 +792,17 @@ void Mesh::CollapseQEM() {
 	//recalculate Q for new point
 	Matrix* newQ = new Matrix();
 	*newQ = Q1_copy + Q2_copy;
-	v2->setQ(newQ); 
+	v2->setQ(newQ);
 
-	//TODO save vertices instead of edges and use edges->Get(v1,v2)
-	//for (auto it : connectedEdges[i]) {
-	//	computeContractionAndError(it);
-	//}
+	for (int i2 : connectedVertices[i]) {
+		Edge* e = edges->Get(i2, i);
+		if (!e) continue; //the edge might be null
+		computeContractionAndError(e);
+	}
 
-	//delete connectedEdges[i]
-	//TODO is this needed?
-
+	//delete connectedVertices[i] //TODO is this needed?
+	
 	edgesQEM->pop();
-
 }
 
 void Mesh::Simplification(int target_tri_count) {
@@ -803,18 +812,21 @@ void Mesh::Simplification(int target_tri_count) {
 	//std::make_heap(edgesShortestFirst.begin(), edgesShortestFirst.end(),
 	//	[](Edge* a, Edge* b) { return a->getLength() > a->getLength(); });
 
-	if (edgeSelectionMode == 1)
-	{
-		Iterator<Edge*>* iter = edges->StartIteration();
-		while (Edge* e = iter->GetNext()) {
-			computeContractionAndError(e);
-		}
-		edges->EndIteration(iter);
-	}
-	else if (edgeSelectionMode == 2)
-	{
-		// QEM initialisation
-	}
+	//if (edgeSelectionMode == 1)
+	//{
+	//	Iterator<Edge*>* iter = edges->StartIteration();
+	//	while (Edge* e = iter->GetNext()) {
+	//		computeContractionAndError(e);
+	//	}
+	//	edges->EndIteration(iter);
+	//}
+	//else if (edgeSelectionMode == 2)
+	//{
+	//	// QEM initialisation
+	//}
+
+	CollapseQEM();
+	return;
 
 	while (numTriangles() > target_tri_count)
 	{
@@ -874,13 +886,13 @@ void Mesh::Save() const
 	Save(filename);
 }
 
-void Mesh::InitQuadricErrorMetric(Triangle* const t)
+void Mesh::InitQuadricErrorMetric(Vertex* a, Vertex* b, Vertex* c)
 {
 	//find plane equation of triangle
 	//use the compute normal function
 	//normal has (a,b,c) coords
-	Vec3f n = ComputeNormal(t->operator[](0)->getPosition(), t->operator[](1)->getPosition(), t->operator[](2)->getPosition());
-	float d = n.Dot3(t->operator[](0)->getPosition()); //fill in arbitrary point;
+	Vec3f n = ComputeNormal(a->getPosition(), b->getPosition(), c->getPosition());
+	float d = n.Dot3(a->getPosition()); //fill in arbitrary point;
 
 	// a^2 ab ac ad
 	// ab b^2 bc bd
@@ -894,19 +906,21 @@ void Mesh::InitQuadricErrorMetric(Triangle* const t)
 	};
 
 	//set Q for all vertices
-	for (int v = 0; v < 3; v++) {
+	//for (int v = 0; v < 3; v++) {
 
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 4; j++) {
-				t->operator[](v)->addToQ(i, j, K[i][j]);
-			}
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			a->addToQ(i, j, K[i][j]);
+			b->addToQ(i, j, K[i][j]);
+			c->addToQ(i, j, K[i][j]);
 		}
-
 	}
+
+	//}
 }
 
 //based on Garland&Heckbert
-void Mesh::computeContractionAndError(Edge* const e)
+void Mesh::computeContractionAndError(Edge* e)
 {
 	Vertex* v1 = e->operator[](0);
 	Vertex* v2 = e->operator[](1);
@@ -919,8 +933,6 @@ void Mesh::computeContractionAndError(Edge* const e)
 	Matrix* Q2 = v2->getQ();
 	Matrix Q_ = (*Q1) + (*Q2);
 
-
-
 	//new
 	Matrix Q_inv(Q_);
 
@@ -930,45 +942,73 @@ void Mesh::computeContractionAndError(Edge* const e)
 	Q_inv.Set(3, 2, 0);
 	Q_inv.Set(3, 3, 1);
 
-	Q_inv.Inverse();
+	//Q might not be inversable, check	
+	if (Q_inv.isInversable()) {
+		Q_inv.Inverse();
+		Vec4f v_2(0, 0, 0, 1);
+		//new
+		Q_inv.Transform(v_2);
+		v_2.Negate();
+		Vec4f v_2_copy(v_2);
+		Q_.Transform(v_2_copy);
+		float error = v_2.Dot3(v_2_copy);
 
-	//Q_.Inverse();
+		e->setError(error);
+		e->setV_(v_2);
 
-	//make a matrix [0 0 0 1]^T
-	Vec4f v_2(0, 0, 0, 1);
+		e->getOpposite()->setError(error);
+		e->getOpposite()->setV_(v_2);
+	}
+	else { //if not inversable, set the weight to v_ midpoint(v1,v2)
+		Vec4f v_((v1->x()+v2->x())/2, (v1->y() + v2->y()) / 2, (v1->z() + v2->z()) / 2, 1);
+		Vec4f v_copy(v_);
+		float error = v_.Dot3(v_copy);
+		
+		e->setError(error);
+		e->setV_(v_);
 
-	//new
-	//Matrix columnMatrix;
-	//
-	//
-	//columnMatrix.Set(0, 0, 0);
-	//columnMatrix.Set(1, 0, 0);
-	//columnMatrix.Set(2, 0, 0);
-	//columnMatrix.Set(3, 0, 1);
+		e->getOpposite()->setError(error);
+		e->getOpposite()->setV_(v_);
+	}
 
-	//compute error (cost)
+	//Q_inv.Inverse();
 
-	//Matrix v_ = Q_ * columnMatrix;
-	
-	//new
-	Q_inv.Transform(v_2);
-	v_2.Negate();
-	Vec4f v_2_copy(v_2);
-	Q_.Transform(v_2_copy);
-	float error = v_2.Dot3(v_2_copy);
+	////make a matrix [0 0 0 1]^T
+	//Vec4f v_2(0, 0, 0, 1);
 
-	//Matrix v_T = v_;
-	//v_T.Transpose();
+	////new
+	////Matrix columnMatrix;
+	////
+	////
+	////columnMatrix.Set(0, 0, 0);
+	////columnMatrix.Set(1, 0, 0);
+	////columnMatrix.Set(2, 0, 0);
+	////columnMatrix.Set(3, 0, 1);
 
-	//Matrix error = v_T * Q_ * v_;
+	////compute error (cost)
+	////Matrix v_ = Q_ * columnMatrix;
 
-	//set the error in the edge
-	//e->setError(error.Get(0,0));
-	e->setError(error);
+	////new
+	//Q_inv.Transform(v_2);
+	//v_2.Negate();
+	//Vec4f v_2_copy(v_2);
+	//Q_.Transform(v_2_copy);
+	//float error = v_2.Dot3(v_2_copy);
 
-	//set the v_ on the edge
-	//Matrix* v__ = &v_;
-	e->setV_(v_2);
+	////Matrix v_T = v_;
+	////v_T.Transpose();
+	////Matrix error = v_T * Q_ * v_;
+	////set the error in the edge
+	////e->setError(error.Get(0,0));
+	//e->setError(error);
+
+	////set the v_ on the edge
+	////Matrix* v__ = &v_;
+	//e->setV_(v_2);
+
+	////set error and v_ on the opposite edge aswell
+	//e->getOpposite()->setError(error);
+	//e->getOpposite()->setV_(v_2);
 }
 
 void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h)
@@ -1077,7 +1117,7 @@ bool Mesh::ProgressiveMeshing(Vec3f cam_center)
 	Vec3f obj_center;
 	bbox->getCenter(obj_center);
 	float distance = (cam_center - obj_center).Length();
-	
+
 	int oldLodLevel = lodLevel;
 	lodLevel = 0.25 * (distance - lodLevel0Distance) / bbox->maxDim(); // Constant depends on scene (here for bunny) (and thus probably differently on bbox->maxDim()). Presumably same issue of scaling as in vertex selection.
 	if (lodLevel == oldLodLevel)

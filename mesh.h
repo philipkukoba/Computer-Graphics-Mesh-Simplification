@@ -83,8 +83,8 @@ public:
 	bool ProgressiveMeshing(Vec3f); // Returns whether we have changed the mesh (hence need to redraw)
 
 	// Quadric error metric helper functions
-	void InitQuadricErrorMetric(Triangle* const t);
-	void computeContractionAndError(Edge* const e);
+	void InitQuadricErrorMetric(Vertex* a, Vertex* b, Vertex* c);
+	void computeContractionAndError(Edge* e);
 
 	void nextEdgeSelectionMode();
 	void toggleCollapseMidPoint();
@@ -128,7 +128,7 @@ private:
 	my_priority_queue <Edge*, vector<Edge*>, EdgeComparer>* edgesShortestFirst;
 	my_priority_queue <Edge*, vector<Edge*>, EdgeComparerQEM>* edgesQEM;
 
-	std::vector < std::vector<Edge*>> connectedEdges;
+	std::vector < std::vector<int>> connectedVertices;
 
 	Vertex* selectedPoint1 = NULL;
 	Vertex* selectedPoint2 = NULL;
