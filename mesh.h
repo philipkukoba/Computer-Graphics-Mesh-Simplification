@@ -70,7 +70,7 @@ public:
 	void CollapseEdge(Edge* e); // Default value for the collapse point
 	void CollapseEdge_MidPoint(Edge* e);
 	void CollapseEdge_EndPoint(Edge* e);
-	void CollapseOneEdge_EndPoint(Edge* e); // Will be the base method where the others are built on top of, only collapses one instance of AB (does not delete AB or A)
+	bool CollapseOneEdge_EndPoint(Edge* e); // Will be the base method where the others are built on top of, only collapses one instance of AB (does not delete AB or A)
 	void CollapseRandomEdge();
 	void CollapseShortestEdge();
 	void CollapseQEM();

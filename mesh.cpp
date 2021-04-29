@@ -485,7 +485,7 @@ void Mesh::LoopSubdivision() {
 // SIMPLIFICATION
 // =================================================================
 
-void Mesh::CollapseOneEdge_EndPoint(Edge* e) {
+bool Mesh::CollapseOneEdge_EndPoint(Edge* e) {  // Returns whether or not the collapse was succesfully executed
 	// Collapses the edge AB to the single point B.
 
 	assert(e->getNext() != NULL);
@@ -507,6 +507,9 @@ void Mesh::CollapseOneEdge_EndPoint(Edge* e) {
 	Edge* DB = AD->getNext();
 	Vertex* D = AD->getVertex();
 	Triangle* ADB = AD->getTriangle();
+
+	if (AD->getOpposite() == NULL) // Should not happen in a well-formed mesh, but if it does, our algorithm will immediately crash when trying to cycle around A.
+		return false;
 
 	// Remove A, edges and triangles, but delay deleting them
 	vertices->Remove(A);
@@ -554,8 +557,12 @@ void Mesh::CollapseOneEdge_EndPoint(Edge* e) {
 		newPQ->setCrease(PQ->getCrease());
 		newPQ->setNext(newQB);
 		Edge* QP = PQ->getOpposite(); // Lies in a triangle which does not contain A, so no worries
-		QP->clearOpposite();
-		newPQ->setOpposite(QP); // Also sets QP's opposite to newPQ. So no need to also use QP->setOpposite(newPQ); In fact, this is not allowed as this method asserts that newPQ's opposite is NULL.
+		if (QP != NULL)
+		{
+			QP->clearOpposite();
+			newPQ->setOpposite(QP); // Also sets QP's opposite to newPQ. So no need to also use QP->setOpposite(newPQ); In fact, this is not allowed as this method asserts that newPQ's opposite is NULL.
+		}
+		// Else newPQ will inherit the missing opposite issue from PQ.
 
 		// Set up newQB
 		newQB->setCrease(QA->getCrease());
@@ -647,6 +654,7 @@ void Mesh::CollapseOneEdge_EndPoint(Edge* e) {
 	delete ADB; ADB = NULL;
 
 	// IMPORTANT: does not delete A or e!
+	return true;
 }
 
 
@@ -658,8 +666,10 @@ void Mesh::CollapseEdge(Edge* e, float collapse_x, float collapse_y, float colla
 
 	for (Edge* e : allAB)
 	{
-		CollapseOneEdge_EndPoint(e);
-		delete e; e = NULL;
+		if (CollapseOneEdge_EndPoint(e))
+		{
+			delete e; e = NULL;
+		}
 	}
 	B->set(collapse_x, collapse_y, collapse_z); // Note that B is also (*e)[0] for all e in the loop.
 	delete A; A = NULL;
@@ -1046,7 +1056,10 @@ void Mesh::removeSelectedVertices()
 	if (e == NULL)
 		cout << "The two selected vertices must form an edge!" << endl;
 	else
+	{
 		Mesh::CollapseEdge_EndPoint(e);
+		cout << "Collapsed the selected edge." << endl;
+	}
 }
 
 void Mesh::SetLodLevel0Distance(Vec3f cam_center)

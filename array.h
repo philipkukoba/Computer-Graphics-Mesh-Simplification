@@ -58,7 +58,7 @@ public:
 		return answer;
 	}
 
-	void Remove(const ARRAY_ELEMENT elem) {
+	bool Remove(const ARRAY_ELEMENT elem) { // False if it does not contain elem, true otherwise.
 		int x = -1;
 		for (int i = 0; i < count; i++) {
 			if (data[i] == elem) {
@@ -66,9 +66,11 @@ public:
 				break;
 			}
 		}
-		assert(x >= 0);
+		if (x < 0)
+			return false;
 		data[x] = data[count - 1];
 		count--;
+		return true;
 	}
 
 	int Member(const ARRAY_ELEMENT elem) const {

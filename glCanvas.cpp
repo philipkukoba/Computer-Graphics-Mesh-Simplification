@@ -169,6 +169,10 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 	case 'g': case 'G':
 		args->gouraud = !args->gouraud;
 		mesh->gouraud = !mesh->gouraud;
+		if (mesh->gouraud)
+			cout << "Using Gouraud shading." << endl;
+		else
+			cout << "Using flat shading." << endl;
 		Render();
 		break;
 	case 's': case 'S':
@@ -178,6 +182,7 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 	case 'd': case 'D':
 		mesh->Simplification((int)floor(0.9 * mesh->numTriangles()));
 		Render();
+		cout << "Simplified the mesh." << endl;
 		break;
 	case 'v': case 'V':
 		mesh->vertexSelectionMode = true;
@@ -192,6 +197,10 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
 		break;
 	case 'p': case 'P':
 		mesh->progressiveMeshing = !mesh->progressiveMeshing;
+		if (mesh->progressiveMeshing)
+			cout << "Enabled progressive meshing." << endl;
+		else
+			cout << "Disabled progressive meshing." << endl;
 		break;
 	case 'm': case 'M':
 		mesh->nextEdgeSelectionMode();
