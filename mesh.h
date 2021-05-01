@@ -10,6 +10,7 @@
 #include <queue>
 #include "matrix.h"
 #include <vector>
+#include <algorithm>
 #include "my_priority_queue.h"
 
 class Vertex;
@@ -83,8 +84,8 @@ public:
 	bool ProgressiveMeshing(Vec3f); // Returns whether we have changed the mesh (hence need to redraw)
 
 	// Quadric error metric helper functions
-	void InitQuadricErrorMetric(Vertex* a, Vertex* b, Vertex* c);
-	void computeContractionAndError(Edge* e, bool isMidPoint = true);
+	void InitQuadricErrorMetric();
+	void computeContractionAndError(Edge* e);
 
 	void nextEdgeSelectionMode();
 	void toggleCollapseMidPoint();
@@ -97,6 +98,9 @@ public:
 	bool progressiveMeshing = false;
 
 	void SetLodLevel0Distance(Vec3f);
+
+	void addEdge(Edge*);
+	void removeEdge(Edge*);  // without deleting
 
 private:
 	// ==============

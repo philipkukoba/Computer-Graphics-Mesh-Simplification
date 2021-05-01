@@ -91,59 +91,24 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 	edges->Add(eb);
 	edges->Add(ec);
 
-	// add edges to connectedEdges vector (legacy)
-	//connectedVertices[a->getIndex()].push_back(ea);
-	//connectedVertices[b->getIndex()].push_back(eb);
-	//connectedVertices[c->getIndex()].push_back(ec);
-
-	//init QEM
-	InitQuadricErrorMetric(a, b, c);
-
 	// connect up with opposite edges (if they exist)
 	if (ea->getOpposite() == NULL)
 	{
 		Edge* ea_op = getEdge((*ea)[1], (*ea)[0]);
-		if (ea_op != NULL && ea_op->getOpposite() == NULL) {
+		if (ea_op != NULL && ea_op->getOpposite() == NULL)
 			ea_op->setOpposite(ea);
-
-			computeContractionAndError(ea_op);
-			edgesQEM->push(ea_op);
-
-			int i1 = (*ea)[0]->getIndex();
-			int i2 = (*ea)[1]->getIndex();
-			connectedVertices[i1].push_back(i2);
-			connectedVertices[i2].push_back(i1);
-		}
 	}
 	if (eb->getOpposite() == NULL)
 	{
 		Edge* eb_op = getEdge((*eb)[1], (*eb)[0]);
-		if (eb_op != NULL && eb_op->getOpposite() == NULL) {
+		if (eb_op != NULL && eb_op->getOpposite() == NULL)
 			eb_op->setOpposite(eb);
-
-			computeContractionAndError(eb_op);
-			edgesQEM->push(eb_op);
-
-			int i1 = (*eb)[0]->getIndex();
-			int i2 = (*eb)[1]->getIndex();
-			connectedVertices[i1].push_back(i2);
-			connectedVertices[i2].push_back(i1);;
-		}
 	}
 	if (ec->getOpposite() == NULL)
 	{
 		Edge* ec_op = getEdge((*ec)[1], (*ec)[0]);
-		if (ec_op != NULL && ec_op->getOpposite() == NULL) {
+		if (ec_op != NULL && ec_op->getOpposite() == NULL)
 			ec_op->setOpposite(ec);
-
-			computeContractionAndError(ec_op);
-			edgesQEM->push(ec_op);
-
-			int i1 = (*ec)[0]->getIndex();
-			int i2 = (*ec)[1]->getIndex();
-			connectedVertices[i1].push_back(i2);
-			connectedVertices[i2].push_back(i1);;
-		}
 	}
 
 	// add the triangle to the master list
@@ -334,6 +299,7 @@ void Mesh::Load(const char* input_file, bool initial_load) {
 	}
 
 	maxVertexIndex = vert_count;
+	InitQuadricErrorMetric();
 
 	fclose(objfile);
 }
@@ -481,6 +447,33 @@ void Mesh::Paint(ArgParser* args) {
 	HandleGLError();
 }
 
+void Mesh::removeEdge(Edge* e)
+{
+	edges->Remove(e);
+	edgesShortestFirst->remove(e);
+	edgesQEM->remove(e);
+
+	Vertex* A = (*e)[1]; Vertex* B = (*e)[0];
+	vector<int> connectedToA = connectedVertices[A->getIndex()];
+	std::vector<int>::iterator position = std::find(connectedToA.begin(), connectedToA.end(), B->getIndex());
+	if (position != connectedToA.end()) // if found
+		connectedToA.erase(position);
+}
+
+void Mesh::addEdge(Edge* e)
+{
+	edges->Add(e);
+	edgesShortestFirst->push(e);
+
+	computeContractionAndError(e);
+	edgesQEM->push(e);
+
+	Vertex* A = (*e)[1]; Vertex* B = (*e)[0];
+	vector<int> connectedToA = connectedVertices[A->getIndex()];
+	connectedToA.push_back(B->getIndex());
+}
+
+
 // =================================================================
 // SUBDIVISION
 // =================================================================
@@ -521,21 +514,15 @@ bool Mesh::CollapseOneEdge_EndPoint(Edge* e) {  // Returns whether or not the co
 
 	// Remove A, edges and triangles, but delay deleting them
 	vertices->Remove(A);
-	edges->Remove(AB);
-	edges->Remove(BC); // The new BC will come from AC later.
-	edges->Remove(CA);
-	edges->Remove(AD);
-	edges->Remove(DB); // The new DB will come from DA in the next step.
-	edges->Remove(BA);
+	removeEdge(AB);
+	removeEdge(BC); // The new BC will come from AC later.
+	removeEdge(CA);
+	removeEdge(AD);
+	removeEdge(DB); // The new DB will come from DA in the next step.
+	removeEdge(BA);
 	triangles->Remove(ABC);
 	triangles->Remove(ADB);
-
-	edgesShortestFirst->remove(AB);
-	edgesShortestFirst->remove(BC);
-	edgesShortestFirst->remove(CA);
-	edgesShortestFirst->remove(AD);
-	edgesShortestFirst->remove(DB);
-	edgesShortestFirst->remove(BA);
+	
 
 	// We'll now cycle through all other triangles containing A.
 	bool cycleCompleted = false;
@@ -599,24 +586,14 @@ bool Mesh::CollapseOneEdge_EndPoint(Edge* e) {  // Returns whether or not the co
 		}
 
 		// Remove old edges and triangles, add new ones
-		edges->Remove(AP);
-		edges->Remove(PQ);
-		edges->Remove(QA);
+		removeEdge(AP);
+		removeEdge(PQ);
+		removeEdge(QA);
 		triangles->Remove(APQ);
 
-		edgesShortestFirst->remove(AP);
-		edgesShortestFirst->remove(PQ);
-		edgesShortestFirst->remove(QA);
-
-		edges->Add(newBP);
-		edges->Add(newPQ);
-		edges->Add(newQB);
-
-		edgesShortestFirst->push(newBP);
-		edgesShortestFirst->push(newPQ);
-		edgesShortestFirst->push(newQB);
-
-
+		addEdge(newBP);
+		addEdge(newPQ);
+		addEdge(newQB);
 		triangles->Add(newBPQ);
 
 		lastBP = newBP; // Remember for the next triangle
@@ -709,125 +686,31 @@ void Mesh::CollapseRandomEdge() {
 
 void Mesh::CollapseShortestEdge() {
 
-	//if the heap is empty it needs to be refreshed
-	//if (edgesShortestFirst->empty()) {
-		//TODO
-	//}
-
 	Edge* e = edgesShortestFirst->top();
-	//std::pop_heap(edgesShortestFirst.begin(), edgesShortestFirst.end());
-	//Edge* e = edgesShortestFirst.back();
-
-	//controleer of de edge niet al verwijderd is in de bag
-	//of als de edge geen opposite heeft
-	while (e == NULL || e->getOpposite() == NULL || e->getNext() == NULL ||
-		e->getIndexA() == e->getIndexB() ||
-		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
-	{
-		edgesShortestFirst->pop();
-		e = edgesShortestFirst->top();
-		//std::pop_heap(edgesShortestFirst.begin(), edgesShortestFirst.end());
-		//Edge* e = edgesShortestFirst.back();	
-	}
-
 	CollapseEdge(e);
-
-	edgesShortestFirst->pop();
-
 }
 
 void Mesh::CollapseQEM() {
 
-	//if the heap is empty it needs to be refreshed
-	if (edgesQEM->empty()) {
-		Iterator<Edge*>* iter = edges->StartIteration();
-		while (Edge* edge = iter->GetNext()) {
-			edgesQEM->emplace(edge);
-		}
-		edges->EndIteration(iter);
-	}
-
 	Edge* e = edgesQEM->top();
-	//std::pop_heap(edgesQEM.begin(), edgesQEM.end());
-	//Edge* e = edgesQEM.back();
-
-	//controleer of de edge niet al verwijderd is in de bag
-	//of als de edge geen opposite heeft
-	while (e->getLength() < 0 || e == NULL ||
-		e->getOpposite() == NULL ||
-		!(e->hasNext()) ||
-		/*e->getIndexA() == e->getIndexB() ||*/
-		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
-	{
-		edgesQEM->pop();
-		e = edgesQEM->top();
-		//std::pop_heap(edgesQEM.begin(), edgesQEM.end());
-		//Edge* e = edgesQEM.back();	
-	}
-
 	//collapse and update
-
-	//first find all edges with v1 in them
-	//just store index of e[1] (= v1)
-	int i = (*e)[1]->getIndex();
-	//connectedEdges[(*e)[1]->getIndex()].
-
-	//std::cout << e->getV_()->Get(0, 0) << std::endl;
-	//std::cout << e->getV_()->Get(1, 0) << std::endl;
-	//std::cout << e->getV_()->Get(2, 0) << std::endl << std::endl;
-	std::cout << e->getV_().x() << std::endl;
-	std::cout << e->getV_().y() << std::endl;
-	std::cout << e->getV_().z() << std::endl << std::endl;
-	//std::cout << e->getV_().w() << std::endl;
-
-	//collapse (v1 gets deleted)
 
 	Vertex* v1 = e->operator[](1);
 	Vertex* v2 = e->operator[](0);
+	int v2Index = v2->getIndex();
 
 	Matrix Q1_copy(*(v1->getQ()));
 	Matrix Q2_copy(*(v2->getQ()));
 
 	CollapseEdge(e, e->getV_().x(), e->getV_().y(), e->getV_().z());
 
-	//update all edges involving v1
-	//recalculate
-
 	//recalculate Q for new point
 	Matrix* newQ = new Matrix();
 	*newQ = Q1_copy + Q2_copy;
 	v2->setQ(newQ);
-
-	for (int i2 : connectedVertices[i]) {
-		Edge* ee = edges->Get(i, i2);
-		if (!ee) continue; //the edge might be null
-		computeContractionAndError(ee);
-	}
-
-	//delete connectedVertices[i] //TODO is this needed?
-
-	edgesQEM->pop();
 }
 
 void Mesh::Simplification(int target_tri_count) {
-
-	//shortest edge collapse with heap vector, the edges vector needs to be a heap first
-	//make heap from the vector
-	//std::make_heap(edgesShortestFirst.begin(), edgesShortestFirst.end(),
-	//	[](Edge* a, Edge* b) { return a->getLength() > a->getLength(); });
-
-	//if (edgeSelectionMode == 1)
-	//{
-	//	Iterator<Edge*>* iter = edges->StartIteration();
-	//	while (Edge* e = iter->GetNext()) {
-	//		computeContractionAndError(e);
-	//	}
-	//	edges->EndIteration(iter);
-	//}
-	//else if (edgeSelectionMode == 2)
-	//{
-	//	// QEM initialisation
-	//}
 
 	while (numTriangles() > target_tri_count)
 	{
@@ -887,49 +770,59 @@ void Mesh::Save() const
 	Save(filename);
 }
 
-void Mesh::InitQuadricErrorMetric(Vertex* a, Vertex* b, Vertex* c)
+void Mesh::InitQuadricErrorMetric()
 {
-	//find plane equation of triangle
-	//use the compute normal function
-	//normal has (a,b,c) coords
-	Vec3f n = ComputeNormal(a->getPosition(), b->getPosition(), c->getPosition());
-	float d = n.Dot3(a->getPosition()); //fill in arbitrary point;
+	Iterator<Triangle*>* iterT = triangles->StartIteration();
+	while (Triangle* t = iterT->GetNext()) {
+		Vertex* a = (*t)[0];
+		Vertex* b = (*t)[1];
+		Vertex* c = (*t)[2];
 
-	// a^2 ab ac ad
-	// ab b^2 bc bd
-	// ac bc c^2 cd
-	// ad bd cd d^2
-	float K[4][4] = {
-		{std::pow(n.x(),2), n.x() * n.y(), n.x() * n.z(), n.x() * d},
-		{n.x() * n.y(), std::pow(n.y(),2), n.y() * n.z(), n.y() * d},
-		{n.x() * n.z(), n.y() * n.z(), std::pow(n.z(),2), n.z() * d},
-		{n.x() * d, n.y() * d, n.z() * d, std::pow(d,2)}
-	};
+		//find plane equation of triangle
+		//use the compute normal function
+		//normal has (a,b,c) coords
+		Vec3f n = ComputeNormal(a->getPosition(), b->getPosition(), c->getPosition());
+		float d = -n.Dot3(a->getPosition()); //fill in arbitrary point;
 
-	//set Q for all vertices
-	//for (int v = 0; v < 3; v++) {
+		// a^2 ab ac ad
+		// ab b^2 bc bd
+		// ac bc c^2 cd
+		// ad bd cd d^2
+		float K[4][4] = {
+			{std::pow(n.x(),2), n.x() * n.y(), n.x() * n.z(), n.x() * d},
+			{n.x() * n.y(), std::pow(n.y(),2), n.y() * n.z(), n.y() * d},
+			{n.x() * n.z(), n.y() * n.z(), std::pow(n.z(),2), n.z() * d},
+			{n.x() * d, n.y() * d, n.z() * d, std::pow(d,2)}
+		};
 
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			a->addToQ(i, j, K[i][j]);
-			b->addToQ(i, j, K[i][j]);
-			c->addToQ(i, j, K[i][j]);
+		//set Q for all vertices
+		//for (int v = 0; v < 3; v++) {
+
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				a->addToQ(i, j, K[i][j]);
+				b->addToQ(i, j, K[i][j]);
+				c->addToQ(i, j, K[i][j]);
+			}
 		}
 	}
+	triangles->EndIteration(iterT);
 
-	//}
+	Iterator<Edge*>* iterE = edges->StartIteration();
+	while (Edge* e = iterE->GetNext()) {
+		computeContractionAndError(e);
+		edgesQEM->push(e);
+		connectedVertices[(*e)[1]->getIndex()].push_back((*e)[0]->getIndex()); // The other connection comes from the opposite
+	}
+	edges->EndIteration(iterE);
 }
 
 //based on Garland&Heckbert
-void Mesh::computeContractionAndError(Edge* e, bool isMidPoint)
+void Mesh::computeContractionAndError(Edge* e)
 {
 	Vertex* v1 = e->operator[](0);
 	Vertex* v2 = e->operator[](1);
 
-	//compute optimal contraction target v_
-	//Matrix Q1(v1->getQ());
-	//Matrix Q2(v2->getQ());
-	//Matrix Q_ = Q1 + Q2;
 	Matrix* Q1 = v1->getQ();
 	Matrix* Q2 = v2->getQ();
 	Matrix Q_ = (*Q1) + (*Q2);
@@ -944,25 +837,26 @@ void Mesh::computeContractionAndError(Edge* e, bool isMidPoint)
 	Q_inv.Set(3, 3, 1);
 
 	//Q might not be inversable, check	
-	if (Q_inv.isInversable()) {
-		Q_inv.Inverse();
+	float det = Q_inv.Determinant();
+	if (Q_inv.isInvertible(1e-8, det)) {
+		Q_inv.InverseGivenDet(det);
 		Vec4f v_2(0, 0, 0, 1);
 		//new
 		Q_inv.Transform(v_2);
-		v_2.Negate();
+		
 		Vec4f v_2_copy(v_2);
 		Q_.Transform(v_2_copy);
-		float error = v_2.Dot3(v_2_copy);
+		float error = v_2.Dot4(v_2_copy);
 
 		e->setError(error);
 		e->setV_(v_2);
 
-		e->getOpposite()->setError(error);
-		e->getOpposite()->setV_(v_2);
+		//e->getOpposite()->setError(error);
+		//e->getOpposite()->setV_(v_2);
 	}
-	else { //if not inversable, set the weight to midpoint or endpoint
+	else { //if not invertible, set the weight to midpoint or endpoint
 		Vec4f v_;
-		if (isMidPoint) {
+		if (edgeCollapseToMidPoint) {
 			Vec4f v__((v1->x() + v2->x()) / 2, (v1->y() + v2->y()) / 2, (v1->z() + v2->z()) / 2, 1);
 			v_ = v__;
 		}
@@ -978,8 +872,8 @@ void Mesh::computeContractionAndError(Edge* e, bool isMidPoint)
 		e->setError(error);
 		e->setV_(v_);
 
-		e->getOpposite()->setError(error);
-		e->getOpposite()->setV_(v_);
+		//e->getOpposite()->setError(error);
+		//e->getOpposite()->setV_(v_);
 	}
 
 	//Q_inv.Inverse();

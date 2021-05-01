@@ -50,9 +50,13 @@ public:
 	void Transpose(Matrix& m) const;
 	void Transpose() { Transpose(*this); }
 
+	float Determinant() const;
 	int Inverse(Matrix& m, float epsilon = 1e-08) const;
+	int InverseGivenDet(Matrix& m, float det, float epsilon = 1e-08) const;
+	int InverseGivenDet(float det, float epsilon = 1e-08) { return InverseGivenDet(*this, epsilon, det); }
 	int Inverse(float epsilon = 1e-08) { return Inverse(*this, epsilon); }
-	bool isInversable(float epsilon = 1e-08) const;
+	bool isInvertible(float epsilon = 1e-08) const;
+	bool isInvertible(float det, float epsilon = 1e-08) const;
 
 	// OVERLOADED OPERATORS
 	Matrix& operator=(const Matrix& m);
