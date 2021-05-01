@@ -81,8 +81,9 @@ public:
 		return (*this)[0]->getIndex(); 
 	}
 
-	//define operator so we can store edges in sorted data structures
-	bool operator<(Edge& e) { return getLength() < e.getLength(); }
+	//unused
+	////define operator so we can store edges in sorted data structures
+	//bool operator<(Edge& e) { return getLength() < e.getLength(); }
 
 	float getError() const { return error; }
 	void setError(float e) { this->error = e; }

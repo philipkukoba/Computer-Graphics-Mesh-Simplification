@@ -84,7 +84,7 @@ public:
 
 	// Quadric error metric helper functions
 	void InitQuadricErrorMetric(Vertex* a, Vertex* b, Vertex* c);
-	void computeContractionAndError(Edge* e);
+	void computeContractionAndError(Edge* e, bool isMidPoint = true);
 
 	void nextEdgeSelectionMode();
 	void toggleCollapseMidPoint();

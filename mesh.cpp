@@ -739,9 +739,13 @@ void Mesh::CollapseShortestEdge() {
 void Mesh::CollapseQEM() {
 
 	//if the heap is empty it needs to be refreshed
-	//if (edgesQEM->empty()) {
-		//TODO
-	//}
+	if (edgesQEM->empty()) {
+		Iterator<Edge*>* iter = edges->StartIteration();
+		while (Edge* edge = iter->GetNext()) {
+			edgesQEM->emplace(edge);
+		}
+		edges->EndIteration(iter);
+	}
 
 	Edge* e = edgesQEM->top();
 	//std::pop_heap(edgesQEM.begin(), edgesQEM.end());
@@ -749,11 +753,11 @@ void Mesh::CollapseQEM() {
 
 	//controleer of de edge niet al verwijderd is in de bag
 	//of als de edge geen opposite heeft
-	while (e == NULL ||
-			e->getOpposite() == NULL ||
-			!(e->hasNext()) ||
-			/*e->getIndexA() == e->getIndexB() ||*/
-			edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
+	while (e->getLength() < 0 || e == NULL ||
+		e->getOpposite() == NULL ||
+		!(e->hasNext()) ||
+		/*e->getIndexA() == e->getIndexB() ||*/
+		edges->Get(e->getIndexA(), e->getIndexB()) == NULL)
 	{
 		edgesQEM->pop();
 		e = edgesQEM->top();
@@ -795,13 +799,13 @@ void Mesh::CollapseQEM() {
 	v2->setQ(newQ);
 
 	for (int i2 : connectedVertices[i]) {
-		Edge* e = edges->Get(i2, i);
-		if (!e) continue; //the edge might be null
-		computeContractionAndError(e);
+		Edge* ee = edges->Get(i, i2);
+		if (!ee) continue; //the edge might be null
+		computeContractionAndError(ee);
 	}
 
 	//delete connectedVertices[i] //TODO is this needed?
-	
+
 	edgesQEM->pop();
 }
 
@@ -824,9 +828,6 @@ void Mesh::Simplification(int target_tri_count) {
 	//{
 	//	// QEM initialisation
 	//}
-
-	CollapseQEM();
-	return;
 
 	while (numTriangles() > target_tri_count)
 	{
@@ -920,7 +921,7 @@ void Mesh::InitQuadricErrorMetric(Vertex* a, Vertex* b, Vertex* c)
 }
 
 //based on Garland&Heckbert
-void Mesh::computeContractionAndError(Edge* e)
+void Mesh::computeContractionAndError(Edge* e, bool isMidPoint)
 {
 	Vertex* v1 = e->operator[](0);
 	Vertex* v2 = e->operator[](1);
@@ -959,11 +960,21 @@ void Mesh::computeContractionAndError(Edge* e)
 		e->getOpposite()->setError(error);
 		e->getOpposite()->setV_(v_2);
 	}
-	else { //if not inversable, set the weight to v_ midpoint(v1,v2)
-		Vec4f v_((v1->x()+v2->x())/2, (v1->y() + v2->y()) / 2, (v1->z() + v2->z()) / 2, 1);
+	else { //if not inversable, set the weight to midpoint or endpoint
+		Vec4f v_;
+		if (isMidPoint) {
+			Vec4f v__((v1->x() + v2->x()) / 2, (v1->y() + v2->y()) / 2, (v1->z() + v2->z()) / 2, 1);
+			v_ = v__;
+		}
+		else { //v2 endpoint
+			Vec4f v__(v2->x(), v2->y(), v2->z(), 1);
+			v_ = v__;
+		}
+
 		Vec4f v_copy(v_);
+		Q_.Transform(v_copy);
 		float error = v_.Dot3(v_copy);
-		
+
 		e->setError(error);
 		e->setV_(v_);
 
