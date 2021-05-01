@@ -106,8 +106,8 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 		if (ea_op != NULL && ea_op->getOpposite() == NULL) {
 			ea_op->setOpposite(ea);
 
-			computeContractionAndError(ea_op);
-			edgesQEM->push(ea_op);
+			/*computeContractionAndError(ea_op);
+			edgesQEM->push(ea_op);*/
 
 			int i1 = (*ea)[0]->getIndex();
 			int i2 = (*ea)[1]->getIndex();
@@ -121,8 +121,8 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 		if (eb_op != NULL && eb_op->getOpposite() == NULL) {
 			eb_op->setOpposite(eb);
 
-			computeContractionAndError(eb_op);
-			edgesQEM->push(eb_op);
+			/*computeContractionAndError(eb_op);
+			edgesQEM->push(eb_op);*/
 
 			int i1 = (*eb)[0]->getIndex();
 			int i2 = (*eb)[1]->getIndex();
@@ -136,8 +136,8 @@ void Mesh::addTriangle(Vertex* a, Vertex* b, Vertex* c) {
 		if (ec_op != NULL && ec_op->getOpposite() == NULL) {
 			ec_op->setOpposite(ec);
 
-			computeContractionAndError(ec_op);
-			edgesQEM->push(ec_op);
+			/*computeContractionAndError(ec_op);
+			edgesQEM->push(ec_op);*/
 
 			int i1 = (*ec)[0]->getIndex();
 			int i2 = (*ec)[1]->getIndex();
@@ -742,6 +742,7 @@ void Mesh::CollapseQEM() {
 	if (edgesQEM->empty()) {
 		Iterator<Edge*>* iter = edges->StartIteration();
 		while (Edge* edge = iter->GetNext()) {
+			computeContractionAndError(edge);
 			edgesQEM->emplace(edge);
 		}
 		edges->EndIteration(iter);
@@ -775,9 +776,9 @@ void Mesh::CollapseQEM() {
 	//std::cout << e->getV_()->Get(0, 0) << std::endl;
 	//std::cout << e->getV_()->Get(1, 0) << std::endl;
 	//std::cout << e->getV_()->Get(2, 0) << std::endl << std::endl;
-	std::cout << e->getV_().x() << std::endl;
+	/*std::cout << e->getV_().x() << std::endl;
 	std::cout << e->getV_().y() << std::endl;
-	std::cout << e->getV_().z() << std::endl << std::endl;
+	std::cout << e->getV_().z() << std::endl << std::endl;*/
 	//std::cout << e->getV_().w() << std::endl;
 
 	//collapse (v1 gets deleted)
@@ -802,9 +803,23 @@ void Mesh::CollapseQEM() {
 		Edge* ee = edges->Get(i, i2);
 		if (!ee) continue; //the edge might be null
 		computeContractionAndError(ee);
+		std::cout << "got here" << std::endl;
 	}
 
 	//delete connectedVertices[i] //TODO is this needed?
+
+	//dirty fix, update all edges and triangles (Q's)
+	Iterator<Edge*>* iter = edges->StartIteration();
+	while (Edge* edge = iter->GetNext()) {
+		computeContractionAndError(edge);
+	}
+	edges->EndIteration(iter);
+	Iterator<Triangle*>* iter2 = triangles->StartIteration();
+	while (Triangle* triangle = iter2->GetNext()) {
+		InitQuadricErrorMetric(triangle->operator[](0), triangle->operator[](1), triangle->operator[](2));
+	}
+	triangles->EndIteration(iter2);
+
 
 	edgesQEM->pop();
 }
