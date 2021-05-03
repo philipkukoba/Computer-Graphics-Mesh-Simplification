@@ -16,8 +16,7 @@ int main(int argc, char* argv[]) {
 	string input_file;
 
 	/* To quickly select the input mesh for the demo (or development). */
-	//input_file = "C:/Users/p_kuk/Desktop/UNI/Computer Graphics/project/data/bunny_1k.obj"; // Philip
-	//input_file = "../../data/bunny_1k.obj"; // Laurens
+	input_file = "../../data/bunny_1k.obj"; 
 
 	/* General input method*/
 	if (args->input_file == NULL)
