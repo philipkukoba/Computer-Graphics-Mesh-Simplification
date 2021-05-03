@@ -536,53 +536,58 @@ bool Mesh::CollapseOneEdge_EndPoint(Edge* e) {  // Returns whether or not the co
 		Vertex* P = AP->getVertex(); Vertex* Q = PQ->getVertex();
 		Triangle* APQ = AP->getTriangle();
 
-		Triangle* newBPQ = new Triangle();
-		Edge* newBP = new Edge(P, newBPQ); // Will replace AP
-		Edge* newPQ = new Edge(Q, newBPQ); // Will replace the old PQ
-		Edge* newQB = new Edge(B, newBPQ); // Will replace QA
+		Edge* newBP = NULL; Edge* newPQ = NULL; Edge* newQB = NULL; Triangle* newBPQ = NULL;
+		bool degenerate = B == P || B == Q || B == Q;  // Degenerate (exceptional) situation with floating points, in that case continue but don't create anything new here (i.e. no 'triangle' BBB for example)
+		if (!degenerate)
+		{  
+			newBPQ = new Triangle();
+			newBP = new Edge(P, newBPQ); // Will replace AP
+			newPQ = new Edge(Q, newBPQ); // Will replace the old PQ
+			newQB = new Edge(B, newBPQ); // Will replace QA
 
-		newBPQ->setEdge(newBP);
+			newBPQ->setEdge(newBP);
 
-		// Set up newBP
-		newBP->setCrease(AP->getCrease());
-		newBP->setNext(newPQ);
-		// The opposite of newBP (PB) comes from the next triangle's newQB (where the next Q is our P), and will hence be set in the next step of the cycle.
+			// Set up newBP
+			newBP->setCrease(AP->getCrease());
+			newBP->setNext(newPQ);
+			// The opposite of newBP (PB) comes from the next triangle's newQB (where the next Q is our P), and will hence be set in the next step of the cycle.
 
-		// Set up newPQ
-		newPQ->setCrease(PQ->getCrease());
-		newPQ->setNext(newQB);
-		Edge* QP = PQ->getOpposite(); // Lies in a triangle which does not contain A, so no worries
-		if (QP != NULL)
-		{
-			QP->clearOpposite();
-			newPQ->setOpposite(QP); // Also sets QP's opposite to newPQ. So no need to also use QP->setOpposite(newPQ); In fact, this is not allowed as this method asserts that newPQ's opposite is NULL.
-		}
-		// Else newPQ will inherit the missing opposite issue from PQ.
-
-		// Set up newQB
-		newQB->setCrease(QA->getCrease());
-		newQB->setNext(newBP);
-		// The opposite of newQB (BQ) comes from the previous triangle's newBP (where the previous P is our Q).
-		if (Q == D)
-		{
-			// Special case if the previous triangle is deleted (hence there is no lastBP): when we are now in APD.
-			Edge* BD = DB->getOpposite();
-			if (BD != NULL)
+			// Set up newPQ
+			newPQ->setCrease(PQ->getCrease());
+			newPQ->setNext(newQB);
+			Edge* QP = PQ->getOpposite(); // Lies in a triangle which does not contain A, so no worries
+			if (QP != NULL)
 			{
-				BD->clearOpposite();
-				newQB->setOpposite(BD);
+				QP->clearOpposite();
+				newPQ->setOpposite(QP); // Also sets QP's opposite to newPQ. So no need to also use QP->setOpposite(newPQ); In fact, this is not allowed as this method asserts that newPQ's opposite is NULL.
+			}
+			// Else newPQ will inherit the missing opposite issue from PQ.
+
+			// Set up newQB
+			newQB->setCrease(QA->getCrease());
+			newQB->setNext(newBP);
+			// The opposite of newQB (BQ) comes from the previous triangle's newBP (where the previous P is our Q).
+			if (Q == D)
+			{
+				// Special case if the previous triangle is deleted (hence there is no lastBP): when we are now in APD.
+				Edge* BD = DB->getOpposite();
+				if (BD != NULL)
+				{
+					BD->clearOpposite();
+					newQB->setOpposite(BD);
+				}
+				else
+				{
+					// Apparently we need to set DB's opposite. As we also need to set newQB's opposite, let's use them together
+					newQB->setOpposite(DB);
+					cout << "During edge collapse 'fixed' two unexpected missing opposites by setting the opposites to each other." << endl;
+				}
 			}
 			else
 			{
-				// Apparently we need to set DB's opposite. As we also need to set newQB's opposite, let's use them together
-				newQB->setOpposite(DB);
-				cout << "During edge collapse 'fixed' two unexpected missing opposites by setting the opposites to each other." << endl;
+				// No need to use clearOpposite() as lastBP's opposite has not yet been set.
+				newQB->setOpposite(lastBP); // Also sets the previous step's newBP's opposite.
 			}
-		}
-		else
-		{
-			// No need to use clearOpposite() as lastBP's opposite has not yet been set.
-			newQB->setOpposite(lastBP); // Also sets the previous step's newBP's opposite.
 		}
 
 		// Remove old edges and triangles, add new ones
@@ -591,10 +596,13 @@ bool Mesh::CollapseOneEdge_EndPoint(Edge* e) {  // Returns whether or not the co
 		removeEdge(QA);
 		triangles->Remove(APQ);
 
-		addEdge(newBP);
-		addEdge(newPQ);
-		addEdge(newQB);
-		triangles->Add(newBPQ);
+		if (!degenerate)
+		{
+			addEdge(newBP);
+			addEdge(newPQ);
+			addEdge(newQB);
+			triangles->Add(newBPQ);
+		}
 
 		lastBP = newBP; // Remember for the next triangle
 		Edge* nextECycle = eCycle->getOpposite()->getNext();
@@ -851,7 +859,7 @@ void Mesh::computeContractionAndError(Edge* e)
 		e->setError(error);
 		e->setV_(v_2);
 
-		//e->getOpposite()->setError(error);
+		//e->getOpposite()->setError(error); // This would be twice as efficient, at least if we manage to remember when it was already set and when not and reduce calls to this method appropriately.
 		//e->getOpposite()->setV_(v_2);
 	}
 	else { //if not invertible, set the weight to midpoint or endpoint
@@ -875,45 +883,6 @@ void Mesh::computeContractionAndError(Edge* e)
 		//e->getOpposite()->setError(error);
 		//e->getOpposite()->setV_(v_);
 	}
-
-	//Q_inv.Inverse();
-
-	////make a matrix [0 0 0 1]^T
-	//Vec4f v_2(0, 0, 0, 1);
-
-	////new
-	////Matrix columnMatrix;
-	////
-	////
-	////columnMatrix.Set(0, 0, 0);
-	////columnMatrix.Set(1, 0, 0);
-	////columnMatrix.Set(2, 0, 0);
-	////columnMatrix.Set(3, 0, 1);
-
-	////compute error (cost)
-	////Matrix v_ = Q_ * columnMatrix;
-
-	////new
-	//Q_inv.Transform(v_2);
-	//v_2.Negate();
-	//Vec4f v_2_copy(v_2);
-	//Q_.Transform(v_2_copy);
-	//float error = v_2.Dot3(v_2_copy);
-
-	////Matrix v_T = v_;
-	////v_T.Transpose();
-	////Matrix error = v_T * Q_ * v_;
-	////set the error in the edge
-	////e->setError(error.Get(0,0));
-	//e->setError(error);
-
-	////set the v_ on the edge
-	////Matrix* v__ = &v_;
-	//e->setV_(v_2);
-
-	////set error and v_ on the opposite edge aswell
-	//e->getOpposite()->setError(error);
-	//e->getOpposite()->setV_(v_2);
 }
 
 void Mesh::selectPoint(Vec3f cam_center, Vec3f cam_direction, Vec3f cam_up, int x, int y, int w, int h)
@@ -1064,10 +1033,15 @@ bool Mesh::ProgressiveMeshing(Vec3f cam_center)
 
 bool Mesh::LodLevelSaved(int _lodLevel, string& fileName) const // fileName is output argument
 {
-	string baseFileName = string(input_file);
-	string baseFileNameNoExt = baseFileName.substr(0, baseFileName.length() - 4);  // no .obj
-	string fileNameNoExt = baseFileNameNoExt + "__lod" + to_string(_lodLevel);
-	fileName = fileNameNoExt + ".obj";
+	if (_lodLevel == 0)
+		fileName = string(input_file);
+	else
+	{
+		string baseFileName = string(input_file);
+		string baseFileNameNoExt = baseFileName.substr(0, baseFileName.length() - 4);  // no .obj
+		string fileNameNoExt = baseFileNameNoExt + "__lod" + to_string(_lodLevel);
+		fileName = fileNameNoExt + ".obj";
+	}
 	std::ifstream infile(fileName);
 	return infile.good();
 }

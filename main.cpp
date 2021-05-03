@@ -15,18 +15,19 @@ int main(int argc, char* argv[]) {
 
 	string input_file;
 
-	//too lazy to input file location everytime (philip)
-	input_file = "C:/Users/p_kuk/Desktop/UNI/Computer Graphics/project/data/bunny_1k.obj"; // Philip
-	input_file = "../../data/bunny_1k.obj"; // Laurens
+	/* To quickly select the input mesh for the demo (or development). */
+	//input_file = "C:/Users/p_kuk/Desktop/UNI/Computer Graphics/project/data/bunny_1k.obj"; // Philip
+	//input_file = "../../data/bunny_1k.obj"; // Laurens
 
-	/*if (args->input_file == NULL)
+	/* General input method*/
+	if (args->input_file == NULL)
 	{
 		cout << "Enter file location" << endl;
 		std::getline(cin, input_file);
 	}
 	else {
 		input_file = args->input_file;
-	}*/
+	}
 
 	mesh->Load(input_file.c_str());
 
