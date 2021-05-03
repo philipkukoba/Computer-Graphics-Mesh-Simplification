@@ -12,7 +12,7 @@ See [here](https://github.ugent.be/pkukoba/Computer-Graphics---Mesh-Simplificati
 
 
 # Report
-[Here](https://www.overleaf.com/project/605da38bc4d47db27383aaa5)
+[Here](./Report)
 
 # Presentation
 [Here](https://ugentbe-my.sharepoint.com/:p:/r/personal/philip_kukoba_ugent_be/_layouts/15/Doc.aspx?sourcedoc=%7BAC1B41B6-2495-46F5-8077-CEBB173CE62D%7D&file=Mesh%20simplification%20for%20Computer%20Graphics.pptx&action=edit&mobileredirect=true)
