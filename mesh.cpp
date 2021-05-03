@@ -454,10 +454,10 @@ void Mesh::removeEdge(Edge* e)
 	edgesQEM->remove(e);
 
 	Vertex* A = (*e)[1]; Vertex* B = (*e)[0];
-	vector<int> connectedToA = connectedVertices[A->getIndex()];
-	std::vector<int>::iterator position = std::find(connectedToA.begin(), connectedToA.end(), B->getIndex());
-	if (position != connectedToA.end()) // if found
-		connectedToA.erase(position);
+	//vector<int> connectedToA = connectedVertices[A->getIndex()];
+	std::vector<int>::iterator position = std::find(connectedVertices[A->getIndex()].begin(), connectedVertices[A->getIndex()].end(), B->getIndex());
+	if (position != connectedVertices[A->getIndex()].end()) // if found
+		connectedVertices[A->getIndex()].erase(position);
 }
 
 void Mesh::addEdge(Edge* e)
@@ -469,8 +469,11 @@ void Mesh::addEdge(Edge* e)
 	edgesQEM->push(e);
 
 	Vertex* A = (*e)[1]; Vertex* B = (*e)[0];
-	vector<int> connectedToA = connectedVertices[A->getIndex()];
-	connectedToA.push_back(B->getIndex());
+
+	/*vector<int> connectedToA = connectedVertices[A->getIndex()];
+	connectedToA.push_back(B->getIndex());*/
+
+	connectedVertices[A->getIndex()].push_back(B->getIndex());
 }
 
 
